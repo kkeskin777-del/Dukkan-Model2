@@ -955,10 +955,10 @@ function renderPlatList(){
   container.innerHTML = '';
   cnt.plat = 0;
   const data = platData || BASLANGIC_PLAT;
-  data.forEach(p => addPlat(p.emoji, p.name, p.komisyon, p.kdv !== undefined ? p.kdv : 20, p.kargo||'0', p.netKarPlat||'500'));
+  data.forEach(p => addPlat(p.emoji, p.name, p.komisyon, p.kdv !== undefined ? p.kdv : 20, p.kargo||'0', p.netKarPlat||'500', p.gumrukVergi||'0', p.ekVergi||'0', p.tasiyiciBedel||'0'));
 }
 
-function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKarPlat='500'){
+function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKarPlat='500', gumrukVergi='0', ekVergi='0', tasiyiciBedel='0'){
   cnt.plat++;
   const id = 'plat_'+cnt.plat;
   const div = document.createElement('div');
@@ -982,9 +982,35 @@ function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKar
       <span class="plat-mob-lbl">Net Kâr ₺</span>
       <input type="text" placeholder="500" inputmode="decimal" autocomplete="off" value="${netKarPlat}" oninput="binAyiriciInput(this);savePlatData()">
     </div>
+    <div class="plat-etsy-extra" style="display:none;grid-column:1/-1;display:none;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.2);border-radius:10px;padding:10px 12px;gap:10px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:11px;color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        Gümrük %
+        <input type="number" placeholder="3.2" min="0" max="100" step="0.1" value="${gumrukVergi}" oninput="savePlatData()" style="flex:1;border-color:rgba(96,165,250,.3);">
+      </label>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        Ek Vergi %
+        <input type="number" placeholder="15" min="0" max="100" step="0.1" value="${ekVergi}" oninput="savePlatData()" style="flex:1;border-color:rgba(96,165,250,.3);">
+      </label>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;flex:1;min-width:120px;">
+        Taşıyıcı Bedeli $
+        <input type="number" placeholder="0.45" min="0" step="0.01" value="${tasiyiciBedel}" oninput="savePlatData()" style="flex:1;border-color:rgba(96,165,250,.3);">
+      </label>
+    </div>
     <button class="bico" onclick="removeRow('${id}'); savePlatData()">×</button>
   `;
   document.getElementById('platList').appendChild(div);
+  const nameInp2 = div.querySelector('input[type="text"]');
+  const etsyExtra = div.querySelector('.plat-etsy-extra');
+  function toggleEtsy(){
+    if(nameInp2.value.toLowerCase().includes('etsy')){
+      etsyExtra.style.display='flex';
+    } else {
+      etsyExtra.style.display='none';
+    }
+  }
+  toggleEtsy();
+  nameInp2.addEventListener('input', toggleEtsy);
 }
 
 function savePlatData(){
@@ -997,7 +1023,10 @@ function savePlatData(){
       komisyon: inputs[1].value,
       kdv: inputs[2].value,
       kargo: inputs[3].value,
-      netKarPlat: inputs[4].value
+      netKarPlat: inputs[4].value,
+      gumrukVergi: inputs[5] ? inputs[5].value||'0' : '0',
+      ekVergi:     inputs[6] ? inputs[6].value||'0' : '0',
+      tasiyiciBedel: inputs[7] ? inputs[7].value||'0' : '0'
     });
   });
   const kurEl = document.getElementById('etsy_kur');
@@ -1022,6 +1051,9 @@ function getPlatforms(){
         name, komisyon: kom, kdvOrani,
         kargo: parseFloat(inputs[3].value)||0,
         netKarPlat: parseTutar(inputs[4].value)||500,
+        gumrukVergi: parseFloat(inputs[5]?.value)||0,
+        ekVergi:     parseFloat(inputs[6]?.value)||0,
+        tasiyiciBedel: parseFloat(inputs[7]?.value)||0,
         isEtsy, etsy_kur
       });
     }
@@ -1172,13 +1204,21 @@ function recalcSavedProds(){
       const kdvOrani = (parseFloat(p.kdv)||0)/100;
       const kg = parseTutar(p.kargo);
       const netKar = parseTutar(p.netKarPlat)||500;
-      if(koR >= 1) return {name:p.name, fiyat:0, net:0};
-      const payda = kdvOrani>0 ? (1-koR-kdvOrani/(1+kdvOrani)) : (1-koR);
-      const sf    = (hamMal+kg+netKar)/payda;
+      const gumrukR = (p.gumrukVergi||0)/100;
+      const ekVergiR = (p.ekVergi||0)/100;
+      const tasiyiciTl = (p.tasiyiciBedel||0) * (p.etsy_kur||38.5);
+      const toplamKesR = koR + gumrukR + ekVergiR;
+      if(toplamKesR >= 1) return {name:p.name, fiyat:0, net:0};
+      const payda = kdvOrani>0 ? (1-toplamKesR-kdvOrani/(1+kdvOrani)) : (1-toplamKesR);
+      const sf    = (hamMal+kg+tasiyiciTl+netKar)/payda;
       const kom   = sf*koR;
       const kdvT  = kdvOrani>0 ? sf*kdvOrani/(1+kdvOrani) : 0;
-      const netK  = sf-kom-kg-hamMal-kdvT;
-      return {name:p.name, fiyat:sf, net:netK, netKarPlat:netKar};
+      const gumrukT  = sf*gumrukR;
+      const ekVergiT = sf*ekVergiR;
+      const netK  = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
+      return {name:p.name, fiyat:sf, net:netK, netKarPlat:netKar,
+              gumrukT, ekVergiT, tasiyiciTl,
+              gumrukVergi:p.gumrukVergi||0, ekVergi:p.ekVergi||0, tasiyiciBedel:p.tasiyiciBedel||0};
     });
   });
   if(changed){
@@ -1577,6 +1617,9 @@ function hesapla(){
           <div class="rrow"><span class="rl">Ham Maliyet</span><span>${fmt(hamMal)} ₺</span></div>
           <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?fmt(kg)+' ₺':'Girilmedi'}</span></div>
           <div class="rrow"><span class="rl">Komisyon (%${p.komisyon})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
+          ${p.gumrukT>0 ? `<div class="rrow"><span class="rl">Gümrük Vergisi (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(p.gumrukT)} ₺</span></div>` : ''}
+          ${p.ekVergiT>0 ? `<div class="rrow"><span class="rl">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(p.ekVergiT)} ₺</span></div>` : ''}
+          ${p.tasiyiciTl>0 ? `<div class="rrow"><span class="rl">Taşıyıcı Bedeli ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(p.tasiyiciTl)} ₺</span></div>` : ''}
           ${kdvOrani>0?`<div class="rrow"><span class="rl">KDV (%${(kdvOrani*100).toFixed(0)})</span><span>${fmt(kdvT)} ₺</span></div>`:''}
           <div class="rrow"><span class="rl" style="color:var(--a3)">💚 Net Kâr</span><span style="color:var(--a3);font-weight:700">${fmt(netK)} ₺</span></div>
           <div class="rrow hl"><span class="rl">💡 Önerilen Satış Fiyatı</span><span class="rv" style="display:flex;align-items:center;gap:8px;">${fmt(sf)} ₺ ${usdBadge}</span></div>
@@ -2197,7 +2240,7 @@ function duzenleUrun(idx){
     // 6. Platformları doldur
     if(snap.platlar && snap.platlar.length){
       document.getElementById('platList').innerHTML = ''; cnt.plat = 0;
-      snap.platlar.forEach(p => addPlat(p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500'));
+      snap.platlar.forEach(p => addPlat(p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500', p.gumrukVergi||'0', p.ekVergi||'0', p.tasiyiciBedel||'0'));
       savePlatData();
     }
   } else {
