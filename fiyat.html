@@ -1670,17 +1670,28 @@ let _pdx=0, _pdy=0, _pdragging=false;
 function initPopupDrag(){
   const hdr = document.getElementById('popupHdr');
   if(!hdr) return;
+  // Mouse
   hdr.removeEventListener('mousedown', _popupDragStart);
   hdr.addEventListener('mousedown', _popupDragStart);
+  // Touch (iPad/iPhone)
+  hdr.removeEventListener('touchstart', _popupTouchStart);
+  hdr.addEventListener('touchstart', _popupTouchStart, {passive:false});
+}
+
+function _getClient(e){
+  // Mouse veya touch'tan koordinat al
+  if(e.touches) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  return {x: e.clientX, y: e.clientY};
 }
 
 function _popupDragStart(e){
-  if(e.target.closest('button')) return; // × butonuna tıklanırsa sürükleme
+  if(e.target.closest('button')) return;
   _pdragging = true;
   const popup = document.getElementById('urunPopup');
   const rect  = popup.getBoundingClientRect();
-  _pdx = e.clientX - rect.left;
-  _pdy = e.clientY - rect.top;
+  const c = _getClient(e);
+  _pdx = c.x - rect.left;
+  _pdy = c.y - rect.top;
   popup.style.transition = 'none';
   document.getElementById('popupHdr').style.cursor = 'grabbing';
   document.addEventListener('mousemove', _popupDragMove);
@@ -1688,12 +1699,25 @@ function _popupDragStart(e){
   e.preventDefault();
 }
 
-function _popupDragMove(e){
-  if(!_pdragging) return;
+function _popupTouchStart(e){
+  if(e.target.closest('button')) return;
+  _pdragging = true;
   const popup = document.getElementById('urunPopup');
-  let nx = e.clientX - _pdx;
-  let ny = e.clientY - _pdy;
-  // Ekran sınırları
+  const rect  = popup.getBoundingClientRect();
+  const c = _getClient(e);
+  _pdx = c.x - rect.left;
+  _pdy = c.y - rect.top;
+  popup.style.transition = 'none';
+  document.addEventListener('touchmove',  _popupTouchMove,  {passive:false});
+  document.addEventListener('touchend',   _popupTouchEnd);
+  document.addEventListener('touchcancel',_popupTouchEnd);
+  e.preventDefault();
+}
+
+function _popupMoveXY(clientX, clientY){
+  const popup = document.getElementById('urunPopup');
+  let nx = clientX - _pdx;
+  let ny = clientY - _pdy;
   const pw = popup.offsetWidth, ph = popup.offsetHeight;
   nx = Math.max(0, Math.min(window.innerWidth  - pw, nx));
   ny = Math.max(0, Math.min(window.innerHeight - ph, ny));
@@ -1701,19 +1725,43 @@ function _popupDragMove(e){
   popup.style.top  = ny + 'px';
 }
 
+function _popupDragMove(e){
+  if(!_pdragging) return;
+  _popupMoveXY(e.clientX, e.clientY);
+}
+
+function _popupTouchMove(e){
+  if(!_pdragging) return;
+  _popupMoveXY(e.touches[0].clientX, e.touches[0].clientY);
+  e.preventDefault();
+}
+
 function _popupDragEnd(){
   _pdragging = false;
   const hdr = document.getElementById('popupHdr');
   if(hdr) hdr.style.cursor = 'grab';
-  document.removeEventListener('mousemove', _popupDragMove);
-  document.removeEventListener('mouseup',   _popupDragEnd);
+  document.removeEventListener('mousemove',   _popupDragMove);
+  document.removeEventListener('mouseup',     _popupDragEnd);
+  document.removeEventListener('touchmove',   _popupTouchMove);
+  document.removeEventListener('touchend',    _popupTouchEnd);
+  document.removeEventListener('touchcancel', _popupTouchEnd);
+}
+
+function _popupTouchEnd(){
+  _pdragging = false;
+  document.removeEventListener('touchmove',   _popupTouchMove);
+  document.removeEventListener('touchend',    _popupTouchEnd);
+  document.removeEventListener('touchcancel', _popupTouchEnd);
 }
 
 function popupKapat(){
   document.getElementById('urunPopup').style.display='none';
   document.removeEventListener('click', popupDisTiklama);
-  document.removeEventListener('mousemove', _popupDragMove);
-  document.removeEventListener('mouseup',   _popupDragEnd);
+  document.removeEventListener('mousemove',   _popupDragMove);
+  document.removeEventListener('mouseup',     _popupDragEnd);
+  document.removeEventListener('touchmove',   _popupTouchMove);
+  document.removeEventListener('touchend',    _popupTouchEnd);
+  document.removeEventListener('touchcancel', _popupTouchEnd);
 }
 
 function popupDisTiklama(e){
