@@ -440,7 +440,7 @@
   <div class="card">
     <div class="ctitle"><div class="ico ip">📝</div>Ürün Bilgisi</div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;">
-      <div class="fg"><label>Ürün Adı</label><input type="text" id="urunAdi" placeholder="Örn: Meşe sehpa, çam kitaplık..."></div>
+      <div class="fg"><label>Ürün Adı</label><input type="text" id="urunAdi" placeholder="Örn: Meşe sehpa, çam kitaplık..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
       <div class="fg" style="margin-top:8px;"><label>Kategori</label><select id="urunKategori" style="width:100%;"><option value="">— Kategori seç —</option></select></div>
       <div>
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Ürün Fotoğrafı</label>
@@ -1035,7 +1035,7 @@ function addHammadde(ad='', en='', boy='', kal='', fiyat=''){
   const div = document.createElement('div');
   div.className = 'hm-row'; div.id = id;
   div.innerHTML = `
-    <input type="text" placeholder="Örn: Meşe 1.8cm, Kayın 2cm..." value="${ad}" oninput="saveHammadde()">
+    <input type="text" placeholder="Örn: Meşe 1.8cm, Kayın 2cm..." value="${ad}" oninput="saveHammadde()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <input type="number" placeholder="121" min="0" step="0.1" value="${en}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="350" min="0" step="0.1" value="${boy}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="1.8" min="0" step="0.01" value="${kal}" oninput="updateHmRow('${id}')">
