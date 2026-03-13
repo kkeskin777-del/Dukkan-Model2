@@ -1599,13 +1599,20 @@ function hesapla(){
     // sf üzerinden komisyon + KDV birlikte çözülür
     // netK = sf - sf*koR - sf*kdv/(1+kdv) - kg - hamMal = hedef
     // sf = (hamMal + kg + netKarHdf) / (1 - koR - kdvOrani/(1+kdvOrani))
-    const payda  = kdvOrani>0 ? (1 - koR - kdvOrani/(1+kdvOrani)) : (1 - koR);
-    const sf     = (hamMal+kg+p.netKarPlat) / payda;
+    const gumrukR    = (p.gumrukVergi||0)/100;
+    const ekVergiR   = (p.ekVergi||0)/100;
+    const tasiyiciTl = (p.tasiyiciBedel||0) * (p.etsy_kur||38.5);
+    const toplamKesR = koR + gumrukR + ekVergiR;
+    const payda  = kdvOrani>0 ? (1 - toplamKesR - kdvOrani/(1+kdvOrani)) : (1 - toplamKesR);
+    if(payda <= 0){ html+=`<div class="rbox"><div class="rplat"><span>${p.emoji} ${p.name}</span><span class="badge" style="background:rgba(255,107,107,.15);color:var(--a1)">⚠️ Kesintiler %100+</span></div></div>`; return; }
+    const sf     = (hamMal+kg+tasiyiciTl+p.netKarPlat) / payda;
     const kom    = sf*koR;
     const kdvT   = kdvOrani>0 ? sf*kdvOrani/(1+kdvOrani) : 0;
-    const netK   = sf-kom-kg-hamMal-kdvT;
+    const gumrukT   = sf*gumrukR;
+    const ekVergiT  = sf*ekVergiR;
+    const netK   = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
     const sfUsd = p.isEtsy ? (sf / p.etsy_kur) : null;
-    results.push({platform:p, satisFiyati:sf, sfUsd, hamMal, kom, kdvT, netK, kg});
+    results.push({platform:p, satisFiyati:sf, sfUsd, hamMal, kom, kdvT, netK, kg, gumrukT, ekVergiT, tasiyiciTl});
     const usdBadge = sfUsd ? `<span class="usd-badge">$ ${sfUsd.toFixed(2)}</span>` : '';
     html+=`
       <div class="rbox">
