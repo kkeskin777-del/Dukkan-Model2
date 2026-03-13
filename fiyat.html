@@ -1654,7 +1654,7 @@ function popupAc(idx, card){
     const pw = popup.offsetWidth  || 630;
     const ph = popup.offsetHeight || 500;
     popup.style.left = Math.max(8, Math.round((window.innerWidth  - pw) / 2)) + 'px';
-    popup.style.top  = Math.max(8, Math.round((window.innerHeight - ph) / 2) + window.scrollY) + 'px';
+    popup.style.top  = Math.max(8, Math.round((window.innerHeight - ph) / 2)) + 'px';
   });
   // Dışarı tıklayınca kapat
   document.removeEventListener('click', popupDisTiklama);
