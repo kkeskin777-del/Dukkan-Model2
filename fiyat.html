@@ -1624,9 +1624,10 @@ function hesapla(){
           <div class="rrow"><span class="rl">Ham Maliyet</span><span>${fmt(hamMal)} ₺</span></div>
           <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?fmt(kg)+' ₺':'Girilmedi'}</span></div>
           <div class="rrow"><span class="rl">Komisyon (%${p.komisyon})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
-          ${p.gumrukT>0 ? `<div class="rrow"><span class="rl">Gümrük Vergisi (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(p.gumrukT)} ₺</span></div>` : ''}
-          ${p.ekVergiT>0 ? `<div class="rrow"><span class="rl">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(p.ekVergiT)} ₺</span></div>` : ''}
-          ${p.tasiyiciTl>0 ? `<div class="rrow"><span class="rl">Taşıyıcı Bedeli ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(p.tasiyiciTl)} ₺</span></div>` : ''}
+          ${(gumrukT>0||ekVergiT>0||tasiyiciTl>0) ? `<div class="rrow"><span class="rl" style="color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span><span></span></div>` : ''}
+          ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺</span></div>` : ''}
+          ${ekVergiT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(ekVergiT)} ₺</span></div>` : ''}
+          ${tasiyiciTl>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Taşıyıcı ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(tasiyiciTl)} ₺</span></div>` : ''}
           ${kdvOrani>0?`<div class="rrow"><span class="rl">KDV (%${(kdvOrani*100).toFixed(0)})</span><span>${fmt(kdvT)} ₺</span></div>`:''}
           <div class="rrow"><span class="rl" style="color:var(--a3)">💚 Net Kâr</span><span style="color:var(--a3);font-weight:700">${fmt(netK)} ₺</span></div>
           <div class="rrow hl"><span class="rl">💡 Önerilen Satış Fiyatı</span><span class="rv" style="display:flex;align-items:center;gap:8px;">${fmt(sf)} ₺ ${usdBadge}</span></div>
