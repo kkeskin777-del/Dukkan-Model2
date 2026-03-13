@@ -398,6 +398,11 @@
     .sim-plat-ad{color:var(--muted);}
     .sim-plat-fiy{white-space:nowrap;}
   }
+
+  .kat-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;transition:all .2s;font-family:'Nunito',sans-serif;}
+  .kat-btn.active{background:var(--a2);border-color:var(--a2);color:#fff;font-weight:700;}
+  .kat-btn:hover:not(.active){border-color:var(--a2);color:var(--a2);}
+  .si-kat{display:inline-block;font-size:10px;background:rgba(251,191,36,.15);color:var(--a2);border-radius:10px;padding:2px 8px;margin-bottom:3px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -436,6 +441,7 @@
     <div class="ctitle"><div class="ico ip">📝</div>Ürün Bilgisi</div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;">
       <div class="fg"><label>Ürün Adı</label><input type="text" id="urunAdi" placeholder="Örn: Meşe sehpa, çam kitaplık..."></div>
+      <div class="fg" style="margin-top:8px;"><label>Kategori</label><select id="urunKategori" style="width:100%;"><option value="">— Kategori seç —</option></select></div>
       <div>
         <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Ürün Fotoğrafı</label>
         <div id="fotoDrop" onclick="document.getElementById('fotoInput').click()"
@@ -609,6 +615,14 @@
 <!-- ═══════════ ÜRÜNLERİM ═══════════ -->
 <div id="tab-urunler" class="tab">
   <div class="card">
+    <div class="ctitle"><div class="ico ip">📂</div>Kategoriler
+      <button class="btn badd" style="margin-left:auto;padding:5px 12px;font-size:12px;" onclick="kategoriEklePrompt()">➕ Kategori Oluştur</button>
+    </div>
+    <div id="kategoriFiltre" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+      <button class="kat-btn active" data-kat="" onclick="kategoriFiltrele('')">📦 Tümü</button>
+    </div>
+  </div>
+  <div class="card">
     <div class="ctitle"><div class="ico ip">📦</div>Kayıtlı Ürünler</div>
     <div id="savedList"></div>
   </div>
@@ -642,6 +656,72 @@
 
 <script>
 // ════════════ VERİ ════════════
+// ════════════ KATEGORİ ════════════
+function kategoriKaydet() {
+  syncYaz('fhp_kategoriler', kategoriler);
+}
+
+function kategoriEklePrompt() {
+  const ad = prompt('Yeni kategori adı:');
+  if(!ad || !ad.trim()) return;
+  const temiz = ad.trim();
+  if(kategoriler.includes(temiz)) { alert('Bu kategori zaten var!'); return; }
+  kategoriler.push(temiz);
+  kategoriKaydet();
+  renderKategoriFiltreBtn();
+  refreshKategoriSelect();
+}
+
+function kategoriFiltrele(kat) {
+  aktifKategori = kat;
+  renderKategoriFiltreBtn();
+  renderSaved();
+}
+
+function renderKategoriFiltreBtn() {
+  const div = document.getElementById('kategoriFiltre');
+  if(!div) return;
+  div.innerHTML = '<button class="kat-btn' + (aktifKategori==='' ? ' active' : '') + '" data-kat="" onclick="kategoriFiltrele(\'\')">📦 Tümü</button>';
+  kategoriler.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'kat-btn' + (aktifKategori===k ? ' active' : '');
+    btn.dataset.kat = k;
+    btn.onclick = () => kategoriFiltrele(k);
+    btn.innerHTML = escH(k);
+    const del = document.createElement('span');
+    del.textContent = ' ×';
+    del.style.cssText = 'cursor:pointer;opacity:.6;margin-left:4px;';
+    del.onclick = (e) => { e.stopPropagation(); kategoriSil(k); };
+    btn.appendChild(del);
+    div.appendChild(btn);
+  });
+}
+
+function kategoriSil(k) {
+  if(!confirm('"' + k + '" kategorisini sil? (Ürünler kaybolmaz, kategorisiz olur)')) return;
+  kategoriler = kategoriler.filter(x => x !== k);
+  savedProds.forEach(u => { if(u.kategori === k) u.kategori = ''; });
+  syncYaz('fhp_urunler', savedProds);
+  kategoriKaydet();
+  if(aktifKategori === k) aktifKategori = '';
+  renderKategoriFiltreBtn();
+  refreshKategoriSelect();
+  renderSaved();
+}
+
+function refreshKategoriSelect() {
+  const sel = document.getElementById('urunKategori');
+  if(!sel) return;
+  const mevcut = sel.value;
+  sel.innerHTML = '<option value="">— Kategori seç —</option>';
+  kategoriler.forEach(k => {
+    const o = document.createElement('option');
+    o.value = k; o.textContent = k;
+    sel.appendChild(o);
+  });
+  sel.value = mevcut;
+}
+
 // Platform listesi artık kullanıcı tarafından yönetiliyor
 // Başlangıç platformları (komisyon elle girilecek)
 const BASLANGIC_PLAT = [
@@ -654,6 +734,8 @@ const BASLANGIC_PLAT = [
 ];
 
 let savedProds  = JSON.parse(localStorage.getItem('fhp_urunler')  || '[]');
+let kategoriler = JSON.parse(localStorage.getItem('fhp_kategoriler') || '[]');
+let aktifKategori = '';
 let sabitList   = JSON.parse(localStorage.getItem('fhp_sabit')    || '[]');
 let hammaddeler = (()=>{
   const hm = JSON.parse(localStorage.getItem('fhp_hammadde') || '[]');
@@ -732,7 +814,7 @@ async function syncYukle() {
       const el = document.getElementById('etsy_kur');
       if(el) el.value = all['fhp_etsy_kur'];
     }
-    renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors();
+    renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect();
     syncDurum('ok', '☁️ Bağlı');
   } catch(e) {
     syncDurum('hata', '⚠️ Çevrimdışı — yerel veri');
@@ -797,7 +879,7 @@ function init(){
   renderSabit();
   renderHammadde();
   renderPlatList();
-  renderSaved();
+  renderSaved(); renderKategoriFiltreBtn(); refreshKategoriSelect();
   const savedKur = localStorage.getItem('fhp_etsy_kur');
   if(savedKur){ const el=document.getElementById('etsy_kur'); if(el) el.value=savedKur; }
   fetchUsdKur();
@@ -1691,6 +1773,7 @@ function buildUrunObj(){
   return {
     id: Date.now(),
     ad: lastResult.urunAdi,
+    kategori: document.getElementById('urunKategori')?.value || '',
     maliyet: lastResult.hamMal,
     kdv: lastResult.results.map(r=>(r.platform.kdvOrani*100).toFixed(0)+'%').join('/') || '—',
     platforms: lastResult.results.map(r=>({name:r.platform.name, fiyat:r.satisFiyati, net:r.netK, netKarPlat:r.platform.netKarPlat||0})),
@@ -1924,13 +2007,17 @@ function saveJpeg(){
 }
 function renderSaved(){
   const div=document.getElementById('savedList');
-  if(savedProds.length===0){
-    div.innerHTML='<div class="empty"><div class="eb">📦</div><p>Henüz kayıtlı ürün yok.</p></div>';
+  const filtreli = aktifKategori === ''
+    ? savedProds
+    : savedProds.filter(u => u.kategori === aktifKategori);
+  if(filtreli.length===0){
+    div.innerHTML='<div class="empty"><div class="eb">📦</div><p>' + (aktifKategori ? '"'+aktifKategori+'" kategorisinde ürün yok.' : 'Henüz kayıtlı ürün yok.') + '</p></div>';
     return;
   }
   div.innerHTML='<div class="slist"></div>';
   const list = div.querySelector('.slist');
-  savedProds.forEach((u, idx) => {
+  filtreli.forEach((u, _fi) => {
+    const idx = savedProds.indexOf(u);
     const fs = u.platforms.map(p=>p.fiyat);
     const mn = Math.min(...fs), mx = Math.max(...fs);
     const el = document.createElement('div');
@@ -1939,6 +2026,7 @@ function renderSaved(){
     el.innerHTML = `
       ${u.foto ? `<img class="si-foto" src="${u.foto}" alt="ürün">` : ''}
       <div style="flex:1;min-width:0;">
+        ${u.kategori ? '<div class="si-kat">📂 '+escH(u.kategori)+'</div>' : ''}
         <div class="sin" id="sinad_${idx}">${escH(u.ad)}</div>
         <div class="sim">
           ${(()=>{ const hm=getHammaddeOzet(u); return hm ? '<span style="color:var(--a5);font-weight:600;">🪵 '+escH(hm)+'</span><br>' : ''; })()}Maliyet: ${fmt(u.maliyet)} ₺<br>
@@ -2008,6 +2096,8 @@ function duzenleUrun(idx){
   // 1. Ürün adı
   const urunAdiEl = document.getElementById('urunAdi');
   if(urunAdiEl) urunAdiEl.value = u.ad;
+  const urunKatEl = document.getElementById('urunKategori');
+  if(urunKatEl) urunKatEl.value = u.kategori||'';
 
   if(snap){
     // 2. Ahşap satırlarını temizle ve yeniden doldur
