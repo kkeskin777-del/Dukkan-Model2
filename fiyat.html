@@ -245,8 +245,11 @@
   .pdf-btn{background:rgba(77,150,255,.12);color:var(--a4);border:1px solid rgba(77,150,255,.25);}
   .pdf-btn:hover{background:rgba(77,150,255,.22);}
   /* Ürünlerim foto thumbnail */
-  .si-foto{width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in;transition:transform .25s ease,box-shadow .25s ease,z-index 0s;}
-  .si-foto:hover{transform:scale(4.5) translateX(28px);box-shadow:0 8px 32px rgba(0,0,0,.7);z-index:200;border-radius:6px;position:relative;}
+  .si-foto{width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in;transition:opacity .2s;}
+  .si-foto:hover{opacity:.85;}
+  /* Foto modal */
+  #fotoModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;cursor:zoom-out;}
+  #fotoModal img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.8);}
   /* Kars gizle/göster */
   #karsWrap.visible{display:block;}
 
@@ -405,6 +408,18 @@
   .kat-btn.active{background:var(--a2);border-color:var(--a2);color:#fff;font-weight:700;}
   .kat-btn:hover:not(.active){border-color:var(--a2);color:var(--a2);}
   .si-kat{display:inline-block;font-size:10px;background:rgba(251,191,36,.15);color:var(--a2);border-radius:10px;padding:2px 8px;margin-bottom:3px;font-weight:600;}
+
+  @media(max-width:600px){
+    .si{flex-direction:column;align-items:stretch;gap:8px;padding:12px;}
+    .si-foto{width:100%;height:140px;border-radius:8px;}
+    .si > div:first-of-type{flex-direction:row;align-items:flex-start;gap:10px;}
+    .sin{font-size:14px;}
+    .sim{font-size:12px;}
+    .sip{flex-direction:row !important;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+    .sip .ss{font-size:14px;}
+    .sip > div{flex-wrap:wrap;gap:4px;}
+    .si-kat{font-size:10px;}
+  }
 </style>
 </head>
 <body>
@@ -633,6 +648,7 @@
 </div>
 
 <!-- ÖZET POPUP -->
+<div id="fotoModal" onclick="fotoModalKapat()"><img id="fotoModalImg" src="" alt="ürün"></div>
 <div id="urunPopup" class="urun-popup" style="display:none;">
   <div class="up-hdr" id="popupHdr">
     <div class="up-hdr-inner">
@@ -2214,6 +2230,8 @@ function renderSaved(){
 
   // Event delegation
   list.addEventListener('click', function(e){
+    const fotoImg = e.target.closest('.si-foto');
+    if(fotoImg){ fotoModalAc(fotoImg.src); return; }
     const delBtn  = e.target.closest('[data-del]');
     const editBtn = e.target.closest('[data-edit]');
     const siCard  = e.target.closest('.si');
@@ -2233,6 +2251,20 @@ function renderSaved(){
     }
   });
 }
+
+function fotoModalAc(src){
+  document.getElementById('fotoModalImg').src = src;
+  const m = document.getElementById('fotoModal');
+  m.style.display = 'flex';
+}
+function fotoModalKapat(){
+  document.getElementById('fotoModal').style.display = 'none';
+  document.getElementById('fotoModalImg').src = '';
+}
+// ESC ile kapat
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') fotoModalKapat();
+});
 
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
