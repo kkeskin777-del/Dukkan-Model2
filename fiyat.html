@@ -842,14 +842,14 @@ async function syncGonder() {
   _syncing = true;
   syncDurum('mesgul', 'Senkronize ediliyor...');
   try {
-    for(const [key, value] of Object.entries(kuyruk)) {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type':'text/plain'},
-        body: JSON.stringify({key, value})
-      });
-    }
+    // Tüm key/value çiftlerini TEK istekte gönder
+    const batch = Object.entries(kuyruk).map(([key, value]) => ({key, value}));
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({batch})
+    });
     syncDurum('ok', '☁️ Senkronize');
   } catch(e) {
     syncDurum('hata', '⚠️ Bağlantı hatası');
