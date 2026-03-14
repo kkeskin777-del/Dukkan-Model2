@@ -658,6 +658,35 @@
 
 <script>
 // ════════════ VERİ ════════════
+// ════════════ INCH → CM DÖNÜŞÜM ════════════
+function inchParse(val) {
+  if(!val) return 0;
+  const s = String(val).trim().toLowerCase();
+  // "9in", "9 in", "9inch", "9"" formatlarını yakala
+  const m = s.match(/^([\d.,]+)\s*(?:in|inch|"|′′)?$/);
+  if(!m) return parseFloat(s)||0;
+  const sayi = parseFloat(m[1].replace(',','.'))||0;
+  // Sadece in/inch/"/′′ ile bitmişse çevir
+  if(s.match(/(?:in|inch|"|′′)$/)) return Math.round(sayi * 2.54 * 100) / 100;
+  return sayi;
+}
+
+function inchCevir(input) {
+  const s = String(input.value).trim().toLowerCase();
+  if(s.match(/(?:in|inch|"|′′)\s*$/)) {
+    const sayi = parseFloat(s.replace(',','.'))||0;
+    if(sayi > 0) {
+      const cm = Math.round(sayi * 2.54 * 100) / 100;
+      input.value = cm;
+      input.style.borderColor = 'rgba(107,203,119,.5)';
+      input.title = sayi + ' in = ' + cm + ' cm';
+      setTimeout(()=>{ input.style.borderColor=''; }, 1500);
+    }
+  } else {
+    input.title = '';
+  }
+}
+
 // ════════════ KATEGORİ ════════════
 function kategoriKaydet() {
   syncYaz('fhp_kategoriler', kategoriler);
@@ -1293,8 +1322,8 @@ function addAhsap(){
       ${buildHmOptions()}
     </select>
     <input type="text" placeholder="tabla, kenar...">
-    <input type="number" placeholder="50" min="0" step="0.1" oninput="calcAhsapRow('${id}')">
-    <input type="number" placeholder="50" min="0" step="0.1" oninput="calcAhsapRow('${id}')">
+    <input type="text" placeholder="50 cm veya 9in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
+    <input type="text" placeholder="50 cm veya 12in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
     <input type="number" placeholder="1.8" min="0" step="0.01" oninput="calcAhsapRow('${id}')">
     <input type="number" placeholder="cm³ fiyatı" min="0" step="0.000001" oninput="calcAhsapRow('${id}')">
     <div class="ah-maliyet" id="ahmal_${id}">₺ 0,00</div>
@@ -1336,7 +1365,7 @@ function calcAhsapRow(id){
   const row = document.getElementById(id); if(!row) return;
   const inp = row.querySelectorAll('input');
   // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=kal, inp[4]=cm3f
-  const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
+  const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
   const kal=parseFloat(inp[3].value)||0, cm3f=parseFloat(inp[4].value)||0;
   const mal = en*boy*kal*cm3f;
   const badge = document.getElementById('ahmal_'+id);
@@ -1348,7 +1377,7 @@ function calcAhsap(){
   let total=0;
   document.querySelectorAll('#ahsapList .ah-row').forEach(row=>{
     const inp = row.querySelectorAll('input');
-    const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
+    const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
     const kal=parseFloat(inp[3].value)||0, cm3f=parseFloat(inp[4].value)||0;
     total += en*boy*kal*cm3f;
   });
@@ -1845,8 +1874,8 @@ function snapshotForm(){
     ahsaplar.push({
       hmIdx: sel ? sel.value : '',
       aciklama: inp[0]?.value||'',
-      en:  inp[1]?.value||'',
-      boy: inp[2]?.value||'',
+      en:  String(inchParse(inp[1]?.value)||''),
+      boy: String(inchParse(inp[2]?.value)||''),
       kal: inp[3]?.value||'',
       cm3f:inp[4]?.value||''
     });
