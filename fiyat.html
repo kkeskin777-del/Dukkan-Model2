@@ -98,6 +98,8 @@
   .plat-kargo-cell{position:relative;}
   .plat-kargo-cell input{padding-right:20px;text-align:right;background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.2);}
   .plat-kargo-cell::after{content:'₺';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+  .plat-kargo-cell.kargo-usd::after{content:'$';color:#60a5fa;}
+  .plat-kargo-cell.kargo-usd input{border-color:rgba(96,165,250,.35);color:#60a5fa;}
   .plat-nk-cell{position:relative;}
   .plat-nk-cell input{padding-right:20px;text-align:right;background:rgba(107,203,119,.08);border-color:rgba(107,203,119,.3);color:var(--a3);font-size:15px;font-weight:700;}
   .plat-nk-cell input:focus{border-color:var(--a3);box-shadow:0 0 0 3px rgba(107,203,119,.1);}
@@ -974,8 +976,8 @@ function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKar
       <span class="plat-mob-lbl">KDV %</span>
       <input type="number" placeholder="20" min="0" max="100" step="1" value="${kdv}" oninput="savePlatData()">
     </div>
-    <div class="plat-kargo-cell">
-      <span class="plat-mob-lbl">Kargo ₺</span>
+    <div class="plat-kargo-cell" id="kargo_cell_${id}">
+      <span class="plat-mob-lbl" id="kargo_lbl_${id}">Kargo ₺</span>
       <input type="number" placeholder="0" min="0" step="0.01" value="${kargo}" oninput="savePlatData()">
     </div>
     <div class="plat-nk-cell">
@@ -1002,11 +1004,18 @@ function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKar
   document.getElementById('platList').appendChild(div);
   const nameInp2 = div.querySelector('input[type="text"]');
   const etsyExtra = div.querySelector('.plat-etsy-extra');
+  const kargoCell = div.querySelector('.plat-kargo-cell');
+  const kargoLbl  = div.querySelector('.plat-mob-lbl:nth-of-type(3)');
   function toggleEtsy(){
-    if(nameInp2.value.toLowerCase().includes('etsy')){
-      etsyExtra.style.display='flex';
+    const isE = nameInp2.value.toLowerCase().includes('etsy');
+    etsyExtra.style.display = isE ? 'flex' : 'none';
+    // Kargo hücresindeki ₺/$ göstergesini güncelle
+    if(isE){
+      kargoCell.style.setProperty('--kargo-birim', '"$"');
+      kargoCell.classList.add('kargo-usd');
     } else {
-      etsyExtra.style.display='none';
+      kargoCell.style.removeProperty('--kargo-birim');
+      kargoCell.classList.remove('kargo-usd');
     }
   }
   toggleEtsy();
@@ -1049,7 +1058,8 @@ function getPlatforms(){
       result.push({
         emoji: row.querySelector('.plat-emoji').textContent,
         name, komisyon: kom, kdvOrani,
-        kargo: parseFloat(inputs[3].value)||0,
+        kargoRaw: parseFloat(inputs[3].value)||0,
+        kargo: name.toLowerCase().includes('etsy') ? (parseFloat(inputs[3].value)||0)*etsy_kur : (parseFloat(inputs[3].value)||0),
         netKarPlat: parseTutar(inputs[4].value)||500,
         gumrukVergi: parseFloat(inputs[5]?.value)||0,
         ekVergi:     parseFloat(inputs[6]?.value)||0,
@@ -1202,7 +1212,9 @@ function recalcSavedProds(){
     u.platforms = platlar.filter(p=>p.name).map(p=>{
       const koR = (parseFloat(p.komisyon)||0)/100;
       const kdvOrani = (parseFloat(p.kdv)||0)/100;
-      const kg = parseTutar(p.kargo);
+      const isEtsyP = (p.name||'').toLowerCase().includes('etsy');
+      const kargoRaw = parseTutar(p.kargo);
+      const kg = isEtsyP ? kargoRaw * (parseFloat(snap.etsy_kur)||38.5) : kargoRaw;
       const netKar = parseTutar(p.netKarPlat)||500;
       const gumrukR = (p.gumrukVergi||0)/100;
       const ekVergiR = (p.ekVergi||0)/100;
@@ -1622,7 +1634,7 @@ function hesapla(){
         </div>
         <div class="rrows">
           <div class="rrow"><span class="rl">Ham Maliyet</span><span>${fmt(hamMal)} ₺</span></div>
-          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?fmt(kg)+' ₺':'Girilmedi'}</span></div>
+          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?(p.isEtsy?'$'+(p.kargoRaw||kg/p.etsy_kur).toFixed(2)+' ('+fmt(kg)+' ₺)':fmt(kg)+' ₺'):'Girilmedi'}</span></div>
           <div class="rrow"><span class="rl">Komisyon (%${p.komisyon})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
           ${(gumrukT>0||ekVergiT>0||tasiyiciTl>0) ? `<div class="rrow"><span class="rl" style="color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span><span></span></div>` : ''}
           ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺</span></div>` : ''}
