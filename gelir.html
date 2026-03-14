@@ -8,25 +8,24 @@
 <style>
 :root{
   --bg:     #0a1520;
-  --bg2:    #0f1e2e;
-  --surface:#0f1e2e;
-  --surface2:#132438;
-  --border: rgba(251,191,36,.1);
-  --border2:rgba(251,191,36,.18);
-  --text:   #e8f4ff;
-  --muted:  #6a9ab8;
-  --green:  #86efac;
-  --red:    #fca5a5;
-  --income: #4ade80;
-  --expense: #f87171;
-  --kdv-red:#f87171;
-  --kdv-green:#4ade80;
-  --purple: #fbbf24;
-  --blue:   #fcd34d;
-  --grad:linear-gradient(135deg,#ca8a04,#d97706,#92400e);
-  --grad-income: linear-gradient(135deg,#fbbf24,#d97706);
-  --grad-expense:linear-gradient(135deg,#f97316,#fcd34d);
+  --bg2:    #0a1520;
+  --surface:#0d1f30;
+  --surface2:#0d2535;
+  --border: rgba(251,191,36,.07);
+  --border2:rgba(251,191,36,.12);
+  --text:   #e0f4ff;
+  --muted:  #5a8fa8;
+  --income: #00ff9d;   /* yeşil */
+  --income2:#00d4aa;
+  --expense:#ff6b6b;   /* kırmızı */
+  --expense2:#e84545;
+  --gold:   #ffd93d;
+  --purple: #c77dff;
+  --blue:   #4cc9f0;
+  --grad-income: linear-gradient(135deg,#3dd68c,#00b4d8);
+  --grad-expense:linear-gradient(135deg,#ff6b6b,#c77dff);
   --grad-amber:  linear-gradient(135deg,#e6a817,#c47d0e);
+  --kdv-red:     #c0392b;
   --grad-gold:   linear-gradient(135deg,#ffd93d,#ff9f1c);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -46,7 +45,6 @@ header{
   position:sticky;top:0;z-index:100;
 }
 .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;}
-.hdr-top .logo{position:static;transform:none;}
 .logo{font-family:'Libre Baskerville',serif;font-weight:800;font-size:22px;letter-spacing:-.5px;}
 .logo span{background:var(--grad-income);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .logo em{font-style:normal;color:var(--muted);font-weight:400;font-size:13px;margin-left:8px;}
@@ -67,60 +65,8 @@ header{
 }
 .filter-bar .btn-reset:hover{color:var(--text);border-color:var(--border2);}
 
-  /* ── GELİR VERGİSİ ── */
-  .vergi-wrap{display:flex;flex-direction:column;gap:28px;}
-  .vergi-yil-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(146,64,14,.08));border:1px solid rgba(251,191,36,.25);border-radius:16px;padding:18px 22px;margin-bottom:12px;}
-  .vergi-yil-sol{display:flex;align-items:center;gap:14px;}
-  .vergi-yil-rozet{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#ca8a04,#92400e);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
-  .vergi-yil-ad{font-family:'Libre Baskerville',serif;font-size:20px;font-weight:700;color:var(--text);}
-  .vergi-yil-alt{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.5px;}
-  .vergi-yil-sag{display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
-  .vergi-yil-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-  .vergi-yil-stat-val{font-family:'Libre Baskerville',serif;font-size:18px;font-weight:700;}
-  .vergi-efektif{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:8px 14px;text-align:center;}
-  .vergi-efektif-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-  .vergi-efektif-val{font-size:18px;font-weight:800;color:#fbbf24;}
-  .vergi-tablo-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:10px;}
-  .vergi-tablo-hdr{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 0.8fr 1.2fr;background:rgba(251,191,36,.07);border-bottom:2px solid rgba(251,191,36,.2);}
-  .vergi-tablo-hdr span{padding:11px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
-  .vergi-tablo-hdr span:not(:last-child){border-right:1px solid var(--border);}
-  .vergi-tablo-satir{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 0.8fr 1.2fr;border-bottom:1px solid var(--border);transition:background .15s;}
-  .vergi-tablo-satir:last-child{border-bottom:none;}
-  .vergi-tablo-satir:hover{background:rgba(255,255,255,.03);}
-  .vergi-bos{opacity:.4;}
-  .vtd{padding:14px 14px;font-size:13px;display:flex;align-items:center;}
-  .vtd:not(:last-child){border-right:1px solid rgba(255,255,255,.04);}
-  .vtd-donem{flex-direction:column;align-items:flex-start;gap:2px;}
-  .vtd-donem-no{font-family:'Libre Baskerville',serif;font-size:14px;font-weight:700;color:var(--text);}
-  .vtd-donem-ay{font-size:10px;color:var(--muted);}
-  .vergi-dilim-badge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
-  .vtd-vergi{flex-direction:column;align-items:flex-end;gap:3px;}
-  .vtd-vergi-val{font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;color:#f87171;}
-  .vtd-vergi-yok{font-size:13px;color:var(--muted);}
-  .vtd-vergi-lbl{font-size:10px;color:var(--muted);}
-  .vergi-tablo-toplam{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 0.8fr 1.2fr;background:rgba(251,191,36,.06);border-top:2px solid rgba(251,191,36,.25);}
-  .vergi-tablo-toplam .vtd{padding:16px 14px;}
-  .vergi-tablo-toplam .vtd:not(:last-child){border-right:1px solid rgba(251,191,36,.1);}
-  .vergi-dilim-tablo{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
-  .vergi-dilim-tablo-hdr{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);}
-  .vergi-dilim-tablo-hdr span{padding:9px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
-  .vergi-dilim-satir{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid var(--border);}
-  .vergi-dilim-satir:last-child{border-bottom:none;}
-  .vergi-dilim-satir.aktif-dilim{background:rgba(251,191,36,.07);border-left:3px solid #fbbf24;}
-  .vergi-dilim-satir span{padding:10px 14px;font-size:12px;font-weight:600;}
-  @media(max-width:700px){.vergi-tablo-hdr,.vergi-tablo-satir,.vergi-tablo-toplam{grid-template-columns:1fr 1fr;}.vergi-yil-sag{flex-wrap:wrap;}}
-
-/* ALT SEKMELER */
-.sub-tabs{display:flex;gap:6px;margin:18px 0 14px;justify-content:center;flex-wrap:wrap;}
-.stb{font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;padding:8px 18px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
-.stb:hover{color:var(--text);border-color:var(--muted);}
-.stb.active{background:var(--surface);color:var(--text);border-color:var(--a2, #fbbf24);box-shadow:0 0 0 1px rgba(251,191,36,.2);}
-.ay-chip{font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;}
-.ay-chip:hover{color:var(--text);}
-.ay-chip.active{background:rgba(251,191,36,.12);color:var(--text);border-color:rgba(251,191,36,.4);}
-
 /* sekmeler */
-.tabs{display:flex;gap:4px;margin-top:12px;justify-content:center;}
+.tabs{display:flex;gap:4px;margin-top:12px;}
 .tb{
   padding:10px 20px;border-radius:10px 10px 0 0;
   font-family:'Nunito',sans-serif;font-weight:600;font-size:13px;
@@ -136,7 +82,6 @@ header{
 
 .tab{display:none;}
 .tab.active{display:block;}
-#ozet-period-title{text-align:center;justify-content:center;width:100%;}
 
 /* ── ÖZET KARTLARI ── */
 .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
@@ -154,19 +99,19 @@ header{
 .scard-val{font-family:'Nunito',sans-serif;font-weight:800;font-size:24px;line-height:1;}
 .scard.income .scard-val{background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .scard.expense .scard-val{background:var(--grad-amber);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.scard.net.positive .scard-val{color:#4ade80 !important;-webkit-text-fill-color:#4ade80 !important;}
-.scard.net.negative .scard-val{color:#f87171 !important;-webkit-text-fill-color:#f87171 !important;}
+.scard.net.positive .scard-val{background:var(--grad-income);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.scard.net.negative .scard-val{color:var(--expense);}
 .scard.kdv .scard-val{color:var(--blue);}
 .scard-sub{font-size:11px;color:var(--muted);margin-top:6px;}
 
 /* ── DÖNEM BAŞLIĞI ── */
 .period-title{
-  font-family:'Libre Baskerville',serif;font-weight:700;font-size:18px;
-  margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;width:100%;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:18px;
+  margin-bottom:18px;display:flex;align-items:center;gap:10px;
 }
 .period-badge{
   font-size:12px;font-weight:600;color:var(--purple);
-  background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);
+  background:rgba(199,125,255,.1);border:1px solid rgba(199,125,255,.2);
   border-radius:6px;padding:3px 10px;
 }
 
@@ -200,9 +145,9 @@ header{
 }
 .btn:hover{border-color:var(--border2);filter:brightness(1.1);}
 .btn-income{background:rgba(61,214,140,.12);color:var(--income);border-color:rgba(61,214,140,.25);}
-.btn-income:hover{background:rgba(52,211,153,.2);transform:translateY(-1px);box-shadow:0 6px 16px rgba(52,211,153,.15);}
+.btn-income:hover{background:rgba(61,214,140,.2);}
 .btn-expense{background:rgba(255,107,107,.12);color:var(--expense);border-color:rgba(255,107,107,.25);}
-.btn-expense:hover{background:rgba(249,115,22,.2);transform:translateY(-1px);box-shadow:0 6px 16px rgba(249,115,22,.15);}
+.btn-expense:hover{background:rgba(255,107,107,.2);}
 .btn-sm{padding:6px 12px;font-size:12px;}
 .btn-del{background:transparent;border:1px solid transparent;color:var(--muted);padding:8px 10px;border-radius:8px;}
 .btn-del:hover{background:rgba(255,107,107,.1);color:var(--expense);border-color:rgba(255,107,107,.2);}
@@ -222,7 +167,7 @@ header{
 }
 .entry:hover{border-color:var(--border2);}
 .entry.income-row{grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;}
-.entry.expense-row{grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;background:rgba(248,113,113,.04);border-color:rgba(248,113,113,.12);}
+.entry.expense-row{grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;}
 .entry-name{font-weight:500;font-size:13px;}
 .entry-name small{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
 .entry-val{font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;}
@@ -230,8 +175,7 @@ header{
 .entry-val.red{color:var(--expense);}
 .entry-val.muted{color:var(--muted);font-weight:500;font-size:13px;}
 .entry-date{font-size:11px;color:var(--muted);}
-.kdv-red-badge{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.35);border-radius:8px;font-size:12px;font-weight:800;padding:4px 10px;display:inline-block;}
-.kdv-green-badge{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.35);border-radius:8px;font-size:12px;font-weight:800;padding:4px 10px;display:inline-block;}
+.kdv-red-badge{background:rgba(192,57,43,.15);color:var(--kdv-red);border:1px solid rgba(192,57,43,.35);border-radius:5px;font-size:10px;font-weight:700;padding:2px 7px;display:inline-block;}
   .badge-kdv{
   display:inline-block;background:rgba(76,201,240,.1);color:var(--blue);
   border:1px solid rgba(76,201,240,.2);border-radius:5px;
@@ -242,45 +186,18 @@ header{
 .empty-state p{font-size:13px;}
 
 /* ── AYLIK ÖZET TABLOSU (arşiv) ── */
-.month-table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:13px;}
-.month-table thead th{
-  padding:6px 16px;font-size:10px;font-weight:700;letter-spacing:1.2px;
-  text-transform:uppercase;color:var(--muted);text-align:left;
-}
-.month-table tbody tr td{
-  padding:14px 16px;
-  background:var(--surface);
-  border-top:1px solid var(--border);
+.month-table{width:100%;border-collapse:collapse;font-size:13px;}
+.month-table th{
+  font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--muted);text-align:left;padding:8px 12px;
   border-bottom:1px solid var(--border);
 }
-.month-table tbody tr td:first-child{
-  border-left:1px solid var(--border);
-  border-radius:12px 0 0 12px;
-  border-left:3px solid rgba(251,191,36,.3);
-}
-.month-table tbody tr td:last-child{
-  border-right:1px solid var(--border);
-  border-radius:0 12px 12px 0;
-}
-.month-table tbody tr:hover td{background:rgba(255,255,255,.04);}
-.month-table tfoot tr td{
-  padding:14px 16px;
-  background:rgba(251,191,36,.06);
-  border-top:2px solid rgba(251,191,36,.3);
-  border-bottom:1px solid rgba(251,191,36,.2);
-  font-weight:800;
-}
-.month-table tfoot tr td:first-child{
-  border-left:3px solid rgba(251,191,36,.5);
-  border-radius:12px 0 0 12px;
-}
-.month-table tfoot tr td:last-child{
-  border-right:1px solid rgba(251,191,36,.2);
-  border-radius:0 12px 12px 0;
-}
-.month-table .mn{font-family:'Libre Baskerville',serif;font-weight:700;font-size:13px;color:var(--text);}
-.month-table .pos{color:#4ade80;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;}
-.month-table .neg{color:#f87171;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;}
+.month-table td{padding:11px 12px;border-bottom:1px solid var(--border);}
+.month-table tr:last-child td{border-bottom:none;}
+.month-table tr:hover td{background:rgba(255,255,255,.02);}
+.month-table .mn{font-family:'Nunito',sans-serif;font-weight:600;}
+.month-table .pos{color:var(--income);font-family:'Nunito',sans-serif;font-weight:700;}
+.month-table .neg{color:var(--expense);font-family:'Nunito',sans-serif;font-weight:700;}
 .month-table .neu{color:var(--muted);}
 .month-table .clickable{cursor:pointer;}
 .month-table .clickable:hover .mn{color:var(--purple);text-decoration:underline;}
@@ -310,7 +227,7 @@ header{
   cursor:pointer;background:var(--surface2);
   border:1px solid var(--border);color:var(--muted);transition:all .18s;
 }
-.ytb.active,.ytb:hover{background:rgba(251,191,36,.12);color:var(--purple);border-color:rgba(251,191,36,.3);}
+.ytb.active,.ytb:hover{background:rgba(199,125,255,.12);color:var(--purple);border-color:rgba(199,125,255,.3);}
 
 /* ── AYLIK DETAY ── */
 .month-detail-header{
@@ -337,8 +254,8 @@ header{
   .modal-body{padding:20px;}
   .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
   .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
-  .btn-edit{background:rgba(251,191,36,.1);color:var(--purple);border:1px solid rgba(251,191,36,.25);padding:6px 11px;border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer;}
-  .btn-edit:hover{background:rgba(251,191,36,.2);}
+  .btn-edit{background:rgba(199,125,255,.1);color:var(--purple);border:1px solid rgba(199,125,255,.25);padding:6px 11px;border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;font-weight:600;cursor:pointer;}
+  .btn-edit:hover{background:rgba(199,125,255,.2);}
   .btn-save{background:rgba(61,214,140,.12);color:var(--income);border:1px solid rgba(61,214,140,.25);}
   .btn-save:hover{background:rgba(61,214,140,.22);}
 
@@ -361,95 +278,14 @@ header{
   .summary-grid{grid-template-columns:1fr 1fr;}
   .bar-vals{display:none;}
 }
-  /* ═══════════════════════════════════════
-     MOBİL RESPONSIVE — max-width: 600px
-  ═══════════════════════════════════════ */
-  @media(max-width:600px){
-
-    /* Wrap */
-    .wrap{padding:10px 8px 0;}
-
-    /* Header */
-    .hdr-top{flex-direction:column;align-items:stretch;gap:8px;padding:8px 10px;}
-    .logo{font-size:15px;text-align:center;}
-    .logo em{font-size:10px;}
-    .filter-bar{justify-content:center;flex-wrap:wrap;}
-    .filter-bar select{font-size:12px;padding:5px 8px;}
-
-    /* Sekmeler */
-    .tabs{justify-content:center;flex-wrap:wrap;gap:4px;padding:0 8px;}
-    .tb{font-size:11px;padding:5px 8px;}
-
-    /* Özet kartları */
-    .summary-grid{grid-template-columns:1fr 1fr !important;}
-    .scard{padding:12px 14px;}
-    .scard-val{font-size:18px !important;}
-    .scard-lbl{font-size:9px;}
-
-    /* Gelir/Gider form */
-    .form-row,.form-row-2{grid-template-columns:1fr 1fr !important;gap:6px;}
-    .form-row .fg:first-child,.form-row-2 .fg:first-child{grid-column:1/-1;}
-    .form-row .btn,.form-row-2 .btn{grid-column:1/-1;}
-
-    /* Kayıt listeleri - başlık gizle, satırları kart yap */
-    .entries-header{display:none !important;}
-    .entry.income-row,.entry.expense-row{
-      grid-template-columns:1fr auto !important;
-      row-gap:3px !important;
-      padding:10px 12px !important;
-    }
-    .entry-name{grid-column:1/2;font-size:13px;}
-    .entry-date{grid-column:1/2;font-size:11px;color:var(--muted);}
-    .entry-val{font-size:13px !important;}
-    .entry-val:nth-child(3){grid-column:2/3;grid-row:1/2;}
-    .entry-val:nth-child(4){display:none;}/* KDV tutarı gizle */
-    .entry-val:nth-child(5){grid-column:2/3;grid-row:2/3;}
-
-    /* Özet alt sekmeler */
-    .sub-tabs{gap:4px;}
-    .stb{font-size:11px;padding:6px 10px;}
-
-    /* Tablo */
-    .month-table{font-size:11px;}
-    .month-table th,.month-table td{padding:8px 8px;}
-
-    /* Vergi tablosu */
-    .vergi-tablo-hdr,.vergi-tablo-satir,.vergi-tablo-toplam{
-      grid-template-columns:1fr 1fr !important;
-    }
-    .vergi-tablo-hdr span:nth-child(n+3),
-    .vergi-tablo-satir .vtd:nth-child(n+3),
-    .vergi-tablo-toplam .vtd:nth-child(n+3){display:none;}
-    .vergi-yil-header{flex-direction:column;gap:10px;}
-    .vergi-yil-sag{flex-wrap:wrap;gap:10px;}
-    .vergi-grid{grid-template-columns:1fr 1fr !important;}
-    .vergi-card{font-size:12px;}
-    .vtd{padding:10px 8px !important;font-size:12px !important;}
-
-    /* Bar grafik */
-    .bar-vals{display:none;}
-
-    /* Card */
-    .card{padding:12px 10px;}
-
-    /* KDV özet */
-    .kdv-row{font-size:12px;}
-  }
-
-  @media(max-width:400px){
-    .summary-grid{grid-template-columns:1fr !important;}
-    .vergi-grid{grid-template-columns:1fr !important;}
-  }
-
 </style>
 </head>
 <body>
 
 <header>
   <div class="hdr-top">
-    <div style="flex:1;"></div>
     <div class="logo">Mali<span>Tablo</span> <em>Gelir & Gider Takibi</em></div>
-    <div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div id="syncBar" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;font-size:11px;color:#7878a0;">
         <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:#7878a0;flex-shrink:0;transition:background .4s;"></span>
         <span id="syncLbl">Yükleniyor...</span>
@@ -476,7 +312,6 @@ header{
     <button class="tb" onclick="sw('gelir',this)">📈 Gelirler</button>
     <button class="tb" onclick="sw('gider',this)">📉 Giderler</button>
     <button class="tb" onclick="sw('arsiv',this)">🗂 Arşiv</button>
-    <button class="tb" onclick="sw('vergi',this)">💰 Gelir Vergisi</button>
   </div>
 </header>
 
@@ -484,18 +319,8 @@ header{
 
 <!-- ══════════════ ÖZET ══════════════ -->
 <div id="tab-ozet" class="tab active">
-  <div id="ozet-period-title" class="period-title" style="display:none;width:100%;text-align:center;justify-content:center;align-items:center;margin-left:auto;margin-right:auto;"></div>
+  <div id="ozet-period-title" class="period-title" style="display:none;"></div>
   <div class="summary-grid" id="summaryCards"></div>
-  <!-- Alt sekmeler -->
-  <div class="sub-tabs" id="subTabs">
-    <button class="stb active" onclick="swSub('genel',this)">📋 Genel Tablo</button>
-    <button class="stb" onclick="swSub('yillik',this)">📊 Yıllık Tablo</button>
-    <button class="stb" onclick="swSub('aylik',this)">📅 Aylık Tablo</button>
-  </div>
-  <!-- Aylık çoktan seçmeli ay seçici (sadece aylık tabda görünür) -->
-  <div id="aySecici" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:16px;justify-content:center;">
-    <span style="font-size:12px;color:var(--muted);align-self:center;margin-right:4px;">Ay seçin:</span>
-  </div>
   <div id="ozet-icerik"></div>
 </div>
 
@@ -505,7 +330,7 @@ header{
     <div class="ctitle"><div class="ico ig">📈</div>Gelir Ekle</div>
     <div class="form-row">
       <div class="fg"><label>Açıklama</label><input type="text" id="gelirAd" placeholder="Satış, proje, hizmet..."></div>
-      <div class="fg"><label>Tutar (₺)</label><input type="text" id="gelirTutar" placeholder="0,00" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)"></div>
+      <div class="fg"><label>Tutar (₺)</label><input type="number" id="gelirTutar" placeholder="0.00" min="0" step="0.01"></div>
       <div class="fg"><label>KDV %</label>
         <select id="gelirKdv">
           <option value="0">KDV Yok</option>
@@ -531,7 +356,7 @@ header{
     <div class="ctitle"><div class="ico ir">📉</div>Gider Ekle</div>
     <div class="form-row">
       <div class="fg"><label>Açıklama</label><input type="text" id="giderAd" placeholder="Malzeme, kargo, işçilik..."></div>
-      <div class="fg"><label>Tutar (₺)</label><input type="text" id="giderTutar" placeholder="0,00" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)"></div>
+      <div class="fg"><label>Tutar (₺)</label><input type="number" id="giderTutar" placeholder="0.00" min="0" step="0.01"></div>
       <div class="fg"><label>KDV %</label>
         <select id="giderKdv">
           <option value="0">KDV Yok</option>
@@ -556,10 +381,6 @@ header{
   <div id="arsivIcerik"></div>
 </div>
 
-<div id="tab-vergi" class="tab">
-  <div id="vergiIcerik"></div>
-</div>
-
 </div><!-- /wrap -->
 
 
@@ -578,7 +399,7 @@ header{
       <div class="modal-grid">
         <div class="fg">
           <label>Tutar (₺) — KDV Dahil</label>
-          <input type="text" id="editTutar" placeholder="0,00" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)">
+          <input type="number" id="editTutar" placeholder="0.00" min="0" step="0.01">
         </div>
         <div class="fg">
           <label>KDV %</label>
@@ -614,7 +435,7 @@ let giderler = JSON.parse(localStorage.getItem('mt_gider') || '[]');
 const AYLAR = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
 // ════════════ GOOGLE SHEETS SYNC ════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwoljMq2NJUv8EWRUHil_BvnTceNOsXlLM9Mih8_jFREQRe_71U5MSyaa8a7jXMvOXw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwK_qHuRyGq4MPaxua-KxssVG7P13TytaiFk9pMCeE33EUcsZ4FDtvdohdkC1iGheAA/exec';
 let _syncTimer = null;
 let _syncQueue = {};
 let _syncing   = false;
@@ -682,31 +503,6 @@ function kaydetGelir(){ syncYaz('mt_gelir', gelirler); }
 function kaydetGider(){ syncYaz('mt_gider', giderler); }
 
 // ── YARDIMCI ──
-
-// ── BİN AYIRICI ──
-function fmtInput(val) {
-  if(!val && val!==0) return '';
-  const s = parseFloat(val).toFixed(2);
-  const [tam, ondalik] = s.split('.');
-  return tam.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + ondalik;
-}
-function parseTutar(str) {
-  if(!str) return 0;
-  // "1.234,56" → 1234.56
-  return parseFloat(str.replace(/\./g,'').replace(',','.')) || 0;
-}
-function binAyiriciInput(el) {
-  let v = el.value;
-  // Sadece rakam, nokta (bin ayırıcı), virgül (ondalık) bırak
-  v = v.replace(/[^0-9,]/g, '');
-  // Birden fazla virgül olmasın
-  const parts = v.split(',');
-  let tam = parts[0];
-  let ondalik = parts.length > 1 ? parts[1].slice(0,2) : null;
-  // Bin ayırıcı ekle
-  tam = tam.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  el.value = ondalik !== null ? tam + ',' + ondalik : tam;
-}
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function escH(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
 function bugunTarih(){ return new Date().toISOString().split('T')[0]; }
@@ -749,127 +545,6 @@ function yillariGuncelle(){
 // ══════════════════════════════════════════
 // SEKME GEÇİŞİ
 // ══════════════════════════════════════════
-
-function swSub(tab, el){
-  window._subTab = tab;
-  document.querySelectorAll('.stb').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  // Aylık seçici göster/gizle
-  const aySecici = document.getElementById('aySecici');
-  if(tab === 'aylik'){
-    renderAyChips();
-    aySecici.style.display = 'flex';
-  } else {
-    aySecici.style.display = 'none';
-  }
-  renderOzet();
-}
-
-function renderAyChips(){
-  const aySecici = document.getElementById('aySecici');
-  const secili = window._seciliAylar || new Set();
-  let html = '<span style="font-size:12px;color:var(--muted);align-self:center;margin-right:4px;">Ay seçin:</span>';
-  for(let i=1;i<=12;i++){
-    const ak = secili.has(i) ? 'active' : '';
-    html += `<button class="ay-chip ${ak}" onclick="toggleAy(${i})">${AYLAR[i]}</button>`;
-  }
-  aySecici.innerHTML = html;
-}
-
-function toggleAy(ay){
-  if(!window._seciliAylar) window._seciliAylar = new Set();
-  if(window._seciliAylar.has(ay)) window._seciliAylar.delete(ay);
-  else window._seciliAylar.add(ay);
-  renderAyChips();
-  renderOzet();
-}
-
-function renderGenelTablo(){
-  // Tüm kayıtlar — yıl bazında gelir/gider/net özeti
-  const yillar = new Set();
-  [...gelirler,...giderler].forEach(e=>yillar.add(tarihParse(e.tarih).yil));
-  if(!yillar.size) return '';
-  const siralı = [...yillar].sort((a,b)=>b-a);
-
-  let rows = siralı.map(y=>{
-    const gY = gelirler.filter(e=>tarihParse(e.tarih).yil===y).reduce((s,e)=>s+e.dahil,0);
-    const dY = giderler.filter(e=>tarihParse(e.tarih).yil===y).reduce((s,e)=>s+e.dahil,0);
-    const gelirKdv = gelirler.filter(e=>tarihParse(e.tarih).yil===y).reduce((s,e)=>s+e.kdvT,0);
-    const giderKdv = giderler.filter(e=>tarihParse(e.tarih).yil===y).reduce((s,e)=>s+e.kdvT,0);
-    const kdvOdenecek = gelirKdv - giderKdv;
-    const netG = gY - dY - (kdvOdenecek > 0 ? kdvOdenecek : 0);
-    const netClass = netG>=0?'pos':'neg';
-    return `<tr>
-      <td><span class="mn">${y}</span></td>
-      <td><span class="pos">${fmt(gY)} ₺</span></td>
-      <td><span class="neg">${fmt(dY)} ₺</span></td>
-      <td><span class="${netClass}">${netG>=0?'+':''}${fmt(netG)} ₺</span></td>
-    </tr>`;
-  }).join('');
-
-  // Genel toplam satırı
-  const topG = gelirler.reduce((s,e)=>s+e.dahil,0);
-  const topD = giderler.reduce((s,e)=>s+e.dahil,0);
-  const topKdvG = gelirler.reduce((s,e)=>s+e.kdvT,0);
-  const topKdvD = giderler.reduce((s,e)=>s+e.kdvT,0);
-  const topKdv = topKdvG - topKdvD;
-  const topNet = topG - topD - (topKdv>0?topKdv:0);
-  const topClass = topNet>=0?'pos':'neg';
-
-  return `<div class="card" style="margin-top:18px;">
-    <div class="ctitle"><div class="ico ig">📋</div>Genel Tablo</div>
-    <table class="month-table">
-      <thead><tr><th>Yıl</th><th>Toplam Gelir</th><th>Toplam Gider</th><th>Net Kâr</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr style="border-top:2px solid var(--border);font-weight:700;">
-        <td><span class="mn">TOPLAM</span></td>
-        <td><span class="pos">${fmt(topG)} ₺</span></td>
-        <td><span class="neg">${fmt(topD)} ₺</span></td>
-        <td><span class="${topClass}">${topNet>=0?'+':''}${fmt(topNet)} ₺</span></td>
-      </tr></tfoot>
-    </table>
-  </div>`;
-}
-
-function renderAylikSecimli(){
-  const secili = window._seciliAylar || new Set();
-  if(!secili.size){
-    return `<div class="card" style="margin-top:18px;"><div class="empty-state"><div class="es-icon">📅</div><p>Yukarıdan görüntülemek istediğiniz ayları seçin.</p></div></div>`;
-  }
-
-  const yillar = new Set();
-  [...gelirler,...giderler].forEach(e=>yillar.add(tarihParse(e.tarih).yil));
-  const siralıYillar = [...yillar].sort((a,b)=>b-a);
-  const siralıAylar = [...secili].sort((a,b)=>a-b);
-
-  let rows = '';
-  siralıYillar.forEach(y=>{
-    siralıAylar.forEach(ay=>{
-      const gA = gelirler.filter(e=>{const p=tarihParse(e.tarih);return p.yil===y&&p.ay===ay;}).reduce((s,e)=>s+e.dahil,0);
-      const dA = giderler.filter(e=>{const p=tarihParse(e.tarih);return p.yil===y&&p.ay===ay;}).reduce((s,e)=>s+e.dahil,0);
-      if(gA===0&&dA===0) return;
-      const net = gA - dA;
-      const netClass = net>=0?'pos':'neg';
-      rows += `<tr>
-        <td><span class="mn">${AYLAR[ay]} ${y}</span></td>
-        <td><span class="pos">${fmt(gA)} ₺</span></td>
-        <td><span class="neg">${fmt(dA)} ₺</span></td>
-        <td><span class="${netClass}">${net>=0?'+':''}${fmt(net)} ₺</span></td>
-      </tr>`;
-    });
-  });
-
-  if(!rows) return `<div class="card" style="margin-top:18px;"><div class="empty-state"><div class="es-icon">📅</div><p>Seçili aylarda kayıt bulunamadı.</p></div></div>`;
-
-  return `<div class="card" style="margin-top:18px;">
-    <div class="ctitle"><div class="ico ig">📅</div>Aylık Tablo — ${siralıAylar.map(a=>AYLAR[a]).join(', ')}</div>
-    <table class="month-table">
-      <thead><tr><th>Dönem</th><th>Toplam Gelir</th><th>Toplam Gider</th><th>Net Kâr</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
-}
-
 function sw(tab, el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tb').forEach(t=>t.classList.remove('active'));
@@ -879,7 +554,6 @@ function sw(tab, el){
   if(tab==='gelir') renderGelirList();
   if(tab==='gider') renderGiderList();
   if(tab==='arsiv') renderArsiv();
-  if(tab==='vergi') renderVergi();
 }
 
 function filterDegisti(){
@@ -900,7 +574,7 @@ function filtreTemizle(){
 // ══════════════════════════════════════════
 function gelirEkle(){
   const ad    = document.getElementById('gelirAd').value.trim();
-  const tutar = parseTutar(document.getElementById('gelirTutar').value);
+  const tutar = parseFloat(document.getElementById('gelirTutar').value)||0;
   const kdv   = parseInt(document.getElementById('gelirKdv').value)||0;
   const tarih = document.getElementById('gelirTarih').value || bugunTarih();
   if(!ad){ toast('⚠️ Açıklama girin.'); return; }
@@ -926,11 +600,7 @@ function gelirSil(id){
 }
 
 function renderGelirList(){
-  const liste = filtrele(gelirler).sort((a,b)=>{
-    const td = b.tarih.localeCompare(a.tarih);
-    if(td !== 0) return td;
-    return (b.id > a.id) ? 1 : (b.id < a.id) ? -1 : 0;
-  });
+  const liste = filtrele(gelirler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
   const el = document.getElementById('gelirList');
   document.getElementById('gelirCount').textContent = liste.length ? `(${liste.length} kayıt)` : '';
   if(!liste.length){
@@ -942,7 +612,7 @@ function renderGelirList(){
       <div class="entry-name">${escH(e.ad)} ${e.kdvOrani>0?`<span class="badge-kdv">%${e.kdvOrani} KDV</span>`:''}</div>
       <div class="entry-date">${tarihStr(e.tarih)}</div>
       <div class="entry-val green">${fmt(e.hariç)} ₺</div>
-      <div class="entry-val green" style="opacity:.7">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
+      <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
       <div class="entry-val green">${fmt(e.dahil)} ₺</div>
       <div style="display:flex;gap:5px;">
         <button class="btn-edit" onclick="modalAc('gelir',${e.id})">✏️</button>
@@ -956,7 +626,7 @@ function renderGelirList(){
 // ══════════════════════════════════════════
 function giderEkle(){
   const ad    = document.getElementById('giderAd').value.trim();
-  const tutar = parseTutar(document.getElementById('giderTutar').value);
+  const tutar = parseFloat(document.getElementById('giderTutar').value)||0;
   const kdv   = parseInt(document.getElementById('giderKdv').value)||0;
   const tarih = document.getElementById('giderTarih').value || bugunTarih();
   if(!ad){ toast('⚠️ Açıklama girin.'); return; }
@@ -982,11 +652,7 @@ function giderSil(id){
 }
 
 function renderGiderList(){
-  const liste = filtrele(giderler).sort((a,b)=>{
-    const td = b.tarih.localeCompare(a.tarih);
-    if(td !== 0) return td;
-    return (b.id > a.id) ? 1 : (b.id < a.id) ? -1 : 0;
-  });
+  const liste = filtrele(giderler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
   const el = document.getElementById('giderList');
   document.getElementById('giderCount').textContent = liste.length ? `(${liste.length} kayıt)` : '';
   if(!liste.length){
@@ -998,7 +664,7 @@ function renderGiderList(){
       <div class="entry-name">${escH(e.ad)} ${e.kdvOrani>0?`<span class="badge-kdv">%${e.kdvOrani} KDV</span>`:''}</div>
       <div class="entry-date">${tarihStr(e.tarih)}</div>
       <div class="entry-val red">${fmt(e.hariç)} ₺</div>
-      <div class="entry-val red" style="opacity:.7">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
+      <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
       <div class="entry-val red">${fmt(e.dahil)} ₺</div>
       <div style="display:flex;gap:5px;">
         <button class="btn-edit" onclick="modalAc('gider',${e.id})">✏️</button>
@@ -1042,11 +708,7 @@ function renderOzet(){
     else if(f.yil)    label = `${f.yil} Yılı`;
     else if(f.ay)     label = `${AYLAR[f.ay]} (Tüm Yıllar)`;
     ptEl.style.display='flex';
-    ptEl.style.justifyContent='center';
-    ptEl.style.alignItems='center';
-    ptEl.style.textAlign='center';
-    ptEl.style.width='100%';
-    ptEl.innerHTML = `<span style="display:flex;align-items:center;gap:10px;justify-content:center;width:100%;text-align:center;">Mali Tablo <span class="period-badge">📅 ${label}</span></span>`;
+    ptEl.innerHTML = `Mali Tablo <span class="period-badge">📅 ${label}</span>`;
   } else {
     ptEl.style.display='none';
   }
@@ -1071,19 +733,18 @@ function renderOzet(){
     </div>
     <div class="scard kdv ${oz.kdvOdenmesi>0?'kdv-odeme':''}">
       <div class="scard-lbl">KDV Durumu</div>
-      <div class="scard-val" style="${oz.kdvOdenmesi>0?'color:var(--kdv-red)':oz.kdvOdenmesi<0?'color:var(--kdv-green)':''}">${oz.kdvOdenmesi>0?'−':oz.kdvOdenmesi<0?'+':''}${fmt(Math.abs(oz.kdvOdenmesi))} ₺</div>
-      <div class="scard-sub" style="${oz.kdvOdenmesi>0?'color:var(--kdv-red)':oz.kdvOdenmesi<0?'color:var(--kdv-green)':''}">${oz.kdvOdenmesi>0?'🔴 Ödenecek KDV':oz.kdvOdenmesi<0?'🟢 İade Alınacak KDV':'⚪ KDV Dengede'}</div>
+      <div class="scard-val" style="${oz.kdvOdenmesi>0?'color:var(--kdv-red)':''}">${oz.kdvOdenmesi>0?'−':oz.kdvOdenmesi<0?'+':''}${fmt(Math.abs(oz.kdvOdenmesi))} ₺</div>
+      <div class="scard-sub">${oz.kdvOdenmesi>0?'Ödenecek KDV':oz.kdvOdenmesi<0?'İade Alınacak KDV':'KDV Dengede'}</div>
     </div>`;
 
-  // İçerik: aktif sub-tab'a göre
+  // İçerik: aylık grafik (filtre yoksa) veya tablo
   const icerik = document.getElementById('ozet-icerik');
-  const subAktif = window._subTab || 'genel';
-  if(subAktif === 'genel'){
-    icerik.innerHTML = renderGenelTablo() + renderKdvOzet(oz);
-  } else if(subAktif === 'yillik'){
+  if(!f.yil && !f.ay){
     icerik.innerHTML = renderYillikGrafik() + renderKdvOzet(oz);
+  } else if(f.yil && !f.ay){
+    icerik.innerHTML = renderAylikGrafik(f.yil) + renderKdvOzet(oz);
   } else {
-    icerik.innerHTML = renderAylikSecimli() + renderKdvOzet(oz);
+    icerik.innerHTML = renderKayitOzeti(gL, gD) + renderKdvOzet(oz);
   }
 }
 
@@ -1094,7 +755,7 @@ function renderKdvOzet(oz){
       <div class="kdv-row"><span>Tahsil Edilen KDV (Satışlar)</span><span style="color:var(--income)">+ ${fmt(oz.topGelirKdv)} ₺</span></div>
       <div class="kdv-row"><span>Ödenen KDV (Alımlar)</span><span style="color:var(--expense)">− ${fmt(oz.topGiderKdv)} ₺</span></div>
       <div class="kdv-row"><span>${oz.kdvOdenmesi>=0?'Devlete Ödenecek KDV':'İade Alınacak KDV'}</span>
-        <span style="color:${oz.kdvOdenmesi>0?'var(--kdv-red)':oz.kdvOdenmesi<0?'var(--kdv-green)':'var(--income)}'}">${oz.kdvOdenmesi>0?'−':oz.kdvOdenmesi<0?'+':''}${fmt(Math.abs(oz.kdvOdenmesi))} ₺</span></div>
+        <span style="color:${oz.kdvOdenmesi>0?'var(--kdv-red)':'var(--income)'}">${oz.kdvOdenmesi>0?'−':oz.kdvOdenmesi<0?'+':''}${fmt(Math.abs(oz.kdvOdenmesi))} ₺</span></div>
     </div>
   </div>`;
 }
@@ -1209,208 +870,6 @@ function ayAyarla(ay){
 // ══════════════════════════════════════════
 // ARŞİV
 // ══════════════════════════════════════════
-
-// ══════════════════════════════════════════
-// GELİR VERGİSİ
-// ══════════════════════════════════════════
-const VERGI_DILIMLERI_2026 = [
-  { limit: 198000,    oran: 0.15, onceki: 0,        oncekiVergi: 0        },
-  { limit: 480000,    oran: 0.20, onceki: 198000,   oncekiVergi: 29700    },
-  { limit: 1300000,   oran: 0.27, onceki: 480000,   oncekiVergi: 86100    },
-  { limit: 5400000,   oran: 0.35, onceki: 1300000,  oncekiVergi: 307500   },
-  { limit: Infinity,  oran: 0.40, onceki: 5400000,  oncekiVergi: 1742500  },
-];
-
-function gelirVergisiHesapla(netKar) {
-  if(netKar <= 0) return 0;
-  for(const d of VERGI_DILIMLERI_2026) {
-    if(netKar <= d.limit) {
-      return d.oncekiVergi + (netKar - d.onceki) * d.oran;
-    }
-  }
-  return 0;
-}
-
-function vergiBilgi(netKar) {
-  if(netKar <= 0) return { oran: 0, dilim: '—' };
-  for(const d of VERGI_DILIMLERI_2026) {
-    if(netKar <= d.limit) {
-      return { oran: d.oran, dilim: `%${(d.oran*100).toFixed(0)}` };
-    }
-  }
-  return { oran: 0.40, dilim: '%40' };
-}
-
-function netKarHesapla(gL, gD) {
-  // Gelir vergisi matrahı: SADECE KDV'li kayıtlar dahil edilir (kdvOrani > 0)
-  // KDV'siz kayıtlar (kdvOrani === 0) gelir vergisi kapsamı dışındadır
-  const topG = gL.filter(e=>e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0);
-  const topD = gD.filter(e=>e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0);
-  return topG - topD;
-}
-
-function renderVergi() {
-  const el = document.getElementById('vergiIcerik');
-  const yillar = new Set();
-  [...gelirler,...giderler].forEach(e=>yillar.add(tarihParse(e.tarih).yil));
-  const siralıYillar = [...yillar].sort((a,b)=>b-a);
-
-  if(!siralıYillar.length) {
-    el.innerHTML = `<div class="card"><div class="empty-state"><div class="es-icon">💰</div><p>Henüz kayıt yok.</p></div></div>`;
-    return;
-  }
-
-  const DONEMLER = [
-    { no:1, label:'1. Dönem', aylar:[1,2,3],  aciklama:'Oca – Şub – Mar' },
-    { no:2, label:'2. Dönem', aylar:[4,5,6],  aciklama:'Nis – May – Haz' },
-    { no:3, label:'3. Dönem', aylar:[7,8,9],  aciklama:'Tem – Ağu – Eyl' },
-    { no:4, label:'4. Dönem', aylar:[10,11,12],aciklama:'Eki – Kas – Ara' },
-  ];
-
-  const DILIMLER = [
-    { limit:'198.000 ₺',    oran:'%15', onceki:'—',           oncekiVergi:'—'           },
-    { limit:'480.000 ₺',    oran:'%20', onceki:'198.000 ₺',   oncekiVergi:'29.700 ₺'    },
-    { limit:'1.300.000 ₺',  oran:'%27', onceki:'480.000 ₺',   oncekiVergi:'86.100 ₺'    },
-    { limit:'5.400.000 ₺',  oran:'%35', onceki:'1.300.000 ₺', oncekiVergi:'307.500 ₺'   },
-    { limit:'Üzeri',        oran:'%40', onceki:'5.400.000 ₺', oncekiVergi:'1.742.500 ₺' },
-  ];
-
-  let html = '<div class="vergi-wrap">';
-
-  siralıYillar.forEach(yil => {
-    let toplamNetKar = 0;
-    let toplamVergiOdendi = 0;
-
-    // Tüm dönem verilerini hesapla
-    const donemler = DONEMLER.map(d => {
-      const gL = gelirler.filter(e=>{ const p=tarihParse(e.tarih); return p.yil===yil && d.aylar.includes(p.ay); });
-      const gD = giderler.filter(e=>{ const p=tarihParse(e.tarih); return p.yil===yil && d.aylar.includes(p.ay); });
-      const donemNet    = netKarHesapla(gL, gD);
-      const donemGelir  = gL.filter(e=>e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0);
-      const donemGider  = gD.filter(e=>e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0);
-      const kdvsizGelir = gL.filter(e=>e.kdvOrani===0).length;
-      const kdvsizGider = gD.filter(e=>e.kdvOrani===0).length;
-      toplamNetKar += donemNet;
-      const kumulatifVergi  = gelirVergisiHesapla(toplamNetKar);
-      const buDonemVergi    = Math.max(0, kumulatifVergi - toplamVergiOdendi);
-      toplamVergiOdendi    += buDonemVergi;
-      const bilgi = vergiBilgi(toplamNetKar);
-      const veri  = gL.length + gD.length > 0;
-      return { ...d, donemNet, donemGelir, donemGider, toplamNetKar, kumulatifVergi, buDonemVergi, bilgi, veri };
-    });
-
-    const yToplamNet   = netKarHesapla(
-      gelirler.filter(e=>tarihParse(e.tarih).yil===yil),
-      giderler.filter(e=>tarihParse(e.tarih).yil===yil)
-    );
-    const yToplamVergi = gelirVergisiHesapla(yToplamNet);
-    const efektif      = yToplamNet > 0 ? (yToplamVergi/yToplamNet*100).toFixed(1) : '0';
-    const aktifDilim   = VERGI_DILIMLERI_2026.findIndex(d=>yToplamNet<=d.limit);
-
-    // Tablo satırları
-    const satirlar = donemler.map(d => `
-      <div class="vergi-tablo-satir ${!d.veri?'vergi-bos':''}">
-        <div class="vtd vtd-donem">
-          <span class="vtd-donem-no">${d.label}</span>
-          <span class="vtd-donem-ay">${d.aciklama}</span>
-          ${(d.kdvsizGelir+d.kdvsizGider)>0?`<span style="font-size:9px;color:#fbbf24;margin-top:2px;">⚠ ${d.kdvsizGelir+d.kdvsizGider} KDV'siz kayıt hariç</span>`:''}
-        </div>
-        <div class="vtd" style="color:#4ade80;font-weight:700;font-size:14px;">${fmt(d.donemGelir)} ₺</div>
-        <div class="vtd" style="color:#f87171;font-weight:700;font-size:14px;">${fmt(d.donemGider)} ₺</div>
-        <div class="vtd" style="color:${d.donemNet>=0?'#4ade80':'#f87171'};font-weight:700;font-size:14px;">${d.donemNet>=0?'+':''}${fmt(d.donemNet)} ₺</div>
-        <div class="vtd" style="color:var(--muted);font-size:13px;">${fmt(d.toplamNetKar)} ₺</div>
-        <div class="vtd"><span class="vergi-dilim-badge">${d.bilgi.dilim}</span></div>
-        <div class="vtd vtd-vergi">
-          ${d.buDonemVergi>0
-            ? `<span class="vtd-vergi-val">${fmt(d.buDonemVergi)} ₺</span><span class="vtd-vergi-lbl">Bu dönem ödenecek</span>`
-            : `<span class="vtd-vergi-yok">—</span>`
-          }
-        </div>
-      </div>`
-    ).join('');
-
-    // Dilim referans tablosu
-    const dilimSatirlari = DILIMLER.map((d,i) => `
-      <div class="vergi-dilim-satir ${i===aktifDilim?'aktif-dilim':''}">
-        <span style="color:var(--muted)">${d.limit}</span>
-        <span style="color:#fbbf24;font-weight:800">${d.oran}</span>
-        <span style="color:var(--muted)">${d.onceki}</span>
-        <span style="color:var(--muted)">${d.oncekiVergi}</span>
-      </div>`
-    ).join('');
-
-    html += `
-    <div>
-      <!-- Yıl başlık -->
-      <div class="vergi-yil-header">
-        <div class="vergi-yil-sol">
-          <div class="vergi-yil-rozet">💰</div>
-          <div>
-            <div class="vergi-yil-ad">${yil} Yılı Gelir Vergisi</div>
-            <div class="vergi-yil-alt">Kümülatif hesaplama · 2026 dilimleri · 3 aylık dönemler</div>
-          </div>
-        </div>
-        <div class="vergi-yil-sag">
-          <div class="vergi-yil-stat">
-            <div class="vergi-yil-stat-lbl">Yıllık Net Kâr</div>
-            <div class="vergi-yil-stat-val" style="color:${yToplamNet>=0?'#4ade80':'#f87171'}">${yToplamNet>=0?'+':''}${fmt(yToplamNet)} ₺</div>
-          </div>
-          <div class="vergi-yil-stat">
-            <div class="vergi-yil-stat-lbl">Toplam Vergi</div>
-            <div class="vergi-yil-stat-val" style="color:#f87171">${fmt(yToplamVergi)} ₺</div>
-          </div>
-          <div class="vergi-efektif">
-            <div class="vergi-efektif-lbl">Efektif Oran</div>
-            <div class="vergi-efektif-val">%${efektif}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Ana dönem tablosu -->
-      <div class="vergi-tablo-wrap">
-        <div class="vergi-tablo-hdr">
-          <span>Dönem</span>
-          <span>Gelir (KDV Dahil)</span>
-          <span>Gider (KDV Dahil)</span>
-          <span>Dönem Net Kâr</span>
-          <span>Kümülatif Kâr</span>
-          <span>Vergi Dilimi</span>
-          <span>Ödenecek Vergi</span>
-        </div>
-        ${satirlar}
-        <!-- Toplam satırı -->
-        <div class="vergi-tablo-toplam">
-          <div class="vtd" style="font-family:'Libre Baskerville',serif;font-weight:700;color:var(--text);">YILLIK TOPLAM</div>
-          <div class="vtd" style="color:#4ade80;font-weight:800;font-size:15px;">${fmt(gelirler.filter(e=>tarihParse(e.tarih).yil===yil&&e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0))} ₺</div>
-          <div class="vtd" style="color:#f87171;font-weight:800;font-size:15px;">${fmt(giderler.filter(e=>tarihParse(e.tarih).yil===yil&&e.kdvOrani>0).reduce((s,e)=>s+e.hariç,0))} ₺</div>
-          <div class="vtd" style="color:${yToplamNet>=0?'#4ade80':'#f87171'};font-weight:800;font-size:15px;">${yToplamNet>=0?'+':''}${fmt(yToplamNet)} ₺</div>
-          <div class="vtd" style="color:var(--muted);">—</div>
-          <div class="vtd"><span class="vergi-dilim-badge">${vergiBilgi(yToplamNet).dilim}</span></div>
-          <div class="vtd vtd-vergi">
-            <span class="vtd-vergi-val" style="font-size:18px;">${fmt(yToplamVergi)} ₺</span>
-            <span class="vtd-vergi-lbl">Yıllık toplam</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vergi dilimleri referans tablosu -->
-      <div class="vergi-dilim-tablo">
-        <div class="vergi-dilim-tablo-hdr">
-          <span>Gelir Sınırı</span>
-          <span>Vergi Oranı</span>
-          <span>Önceki Sınır</span>
-          <span>Sabit Vergi Tutarı</span>
-        </div>
-        ${dilimSatirlari}
-      </div>
-    </div>`;
-  });
-
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-
 function renderArsiv(){
   const yillar = new Set();
   [...gelirler,...giderler].forEach(e=>yillar.add(tarihParse(e.tarih).yil));
@@ -1427,7 +886,7 @@ function renderArsiv(){
 
   siralı.forEach(yil=>{
     html += `<div style="margin-bottom:24px;">
-      <div style="font-family:'Libre Baskerville',serif;font-weight:700;font-size:16px;margin-bottom:12px;color:var(--purple);">📅 ${yil}</div>
+      <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:16px;margin-bottom:12px;color:var(--purple);">📅 ${yil}</div>
       <table class="month-table">
         <thead><tr><th>Ay</th><th>Gelir (KDV Hariç)</th><th>Gider (KDV Hariç)</th><th>Net Kâr</th><th>KDV Durumu</th></tr></thead>
         <tbody>`;
@@ -1444,7 +903,7 @@ function renderArsiv(){
       yTopGider+=oz.topGiderDahil;
       yTopKdv  +=oz.kdvOdenmesi;
       const netClass = oz.netGercek>=0?'pos':'neg';
-      const kdvClass = oz.kdvOdenmesi>0?'kdv-red-badge':oz.kdvOdenmesi<0?'kdv-green-badge':'pos';
+      const kdvClass = oz.kdvOdenmesi>0?'kdv-red-badge':'pos';
       html+=`<tr class="clickable" onclick="arsivAyGit(${yil},${ay})">
         <td><span class="mn">${AYLAR[ay]}</span></td>
         <td><span class="pos">${fmt(oz.topGelirHariç)} ₺</span></td>
@@ -1492,7 +951,7 @@ function modalAc(tip, id){
   document.getElementById('editModalBaslik').textContent = tip==='gelir' ? '📈 Geliri Düzenle' : '📉 Gideri Düzenle';
   document.getElementById('editModalBox').className = 'modal' + (tip==='gider' ? ' expense-modal' : '');
   document.getElementById('editAd').value    = e.ad;
-  document.getElementById('editTutar').value = fmtInput(e.dahil);
+  document.getElementById('editTutar').value = e.dahil;
   document.getElementById('editKdv').value   = e.kdvOrani;
   document.getElementById('editTarih').value = e.tarih;
   document.getElementById('editModal').style.display = 'flex';
@@ -1509,7 +968,7 @@ function modalDisTikla(e){
 
 function editKaydet(){
   const ad    = document.getElementById('editAd').value.trim();
-  const tutar = parseTutar(document.getElementById('editTutar').value);
+  const tutar = parseFloat(document.getElementById('editTutar').value)||0;
   const kdv   = parseInt(document.getElementById('editKdv').value)||0;
   const tarih = document.getElementById('editTarih').value;
   if(!ad){ toast('⚠️ Açıklama girin.'); return; }
