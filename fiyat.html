@@ -420,6 +420,26 @@
     .sip > div{flex-wrap:wrap;gap:4px;}
     .si-kat{font-size:10px;}
   }
+
+  /* Plaka stok */
+  .plaka-row{display:grid;grid-template-columns:2fr 80px 80px 70px 80px 34px;gap:6px;margin-bottom:6px;align-items:center;}
+  .plaka-row input{margin-bottom:0;}
+  .plaka-hdr label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;}
+  .analiz-kart{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .analiz-kart.uretebilir{border-color:rgba(107,203,119,.4);background:rgba(107,203,119,.06);}
+  .analiz-kart.yetersiz{border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.04);}
+  .analiz-urun-ad{font-weight:700;font-size:14px;margin-bottom:8px;}
+  .analiz-plaka-ad{font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .analiz-parcalar{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .analiz-parca{font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(251,191,36,.1);color:var(--a2);border:1px solid rgba(251,191,36,.2);}
+  .analiz-parca.ok{background:rgba(107,203,119,.12);color:#6bcb77;border-color:rgba(107,203,119,.3);}
+  .analiz-parca.fail{background:rgba(255,107,107,.12);color:#ff6b6b;border-color:rgba(255,107,107,.3);}
+  .analiz-adet{font-size:22px;font-weight:800;color:var(--a3);}
+  @media(max-width:600px){
+    .plaka-hdr{display:none!important;}
+    .plaka-row{grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
+    .plaka-row input:first-child{grid-column:1/-1;}
+  }
 </style>
 </head>
 <body>
@@ -437,6 +457,7 @@
       <button class="tb"        onclick="sw('hammadde',this)">🪵 Hammadde</button>
       <button class="tb"        onclick="sw('sabit',this)">⚙️ Genel Giderler</button>
       <button class="tb tb-urunler" onclick="sw('urunler',this)">📦 Ürünlerim</button>
+      <button class="tb" onclick="sw('plaka',this)">🪵 Plaka Stok</button>
     </div>
   </div>
 </header>
@@ -644,6 +665,30 @@
     <div id="savedList"></div>
   </div>
 </div>
+<div id="tab-plaka" class="tab">
+  <div class="card">
+    <div class="ctitle"><div class="ico iw">🪵</div>Plaka Stoğu
+      <button class="btn badd" style="margin-left:auto;padding:5px 12px;font-size:12px;" onclick="plakaEkle()">➕ Plaka Ekle</button>
+    </div>
+    <div class="plaka-hdr" id="plakaHdr" style="display:grid;grid-template-columns:2fr 80px 80px 70px 80px 34px;gap:6px;padding:0 4px;margin-bottom:4px;">
+      <label>Hammadde / Açıklama</label>
+      <label>En (cm)</label>
+      <label>Boy (cm)</label>
+      <label>Kal (cm)</label>
+      <label>Adet</label>
+      <span></span>
+    </div>
+    <div id="plakaList"></div>
+    <div style="margin-top:12px;">
+      <button class="btn bprim" style="width:100%;" onclick="plakaAnaliz()">🔍 Hangi Ürünleri Üretebilirim?</button>
+    </div>
+  </div>
+  <div class="card" id="plakaAnalizSonuc" style="display:none;">
+    <div class="ctitle"><div class="ico ip">📊</div>Analiz Sonuçları</div>
+    <div id="plakaAnalizIc"></div>
+  </div>
+</div>
+
 
 </div>
 
@@ -883,6 +928,7 @@ async function syncYukle() {
     if(all['fhp_hammadde']     != null) { hammaddeler = all['fhp_hammadde']; localStorage.setItem('fhp_hammadde', JSON.stringify(hammaddeler)); }
     if(all['fhp_plat']         != null) { platData    = all['fhp_plat'];     localStorage.setItem('fhp_plat',     JSON.stringify(platData));    }
     if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
+    if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
     if(all['fhp_etsy_kur'] != null) {
       localStorage.setItem('fhp_etsy_kur', all['fhp_etsy_kur']);
       const el = document.getElementById('etsy_kur');
@@ -1039,6 +1085,7 @@ function sw(tab, btn){
   }
   if(tab==='sabit')     { renderSabit(); calcSabitPay(); }
   if(tab==='hammadde')  renderHammadde();
+  if(tab==='plaka')     renderPlaka();
 }
 
 // ════════════ PLATFORMLAR (manuel komisyon) ════════════
@@ -2291,6 +2338,142 @@ function fotoModalKapat(){
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape') fotoModalKapat();
 });
+
+
+// ════════════ PLAKA STOK ════════════
+let plakaStok = JSON.parse(localStorage.getItem('fhp_plaka') || '[]');
+let _plakaCnt = 0;
+
+function plakaEkle(ad='', en='', boy='', kal='', adet='1'){
+  _plakaCnt++;
+  const id = 'plk_' + _plakaCnt;
+  const div = document.createElement('div');
+  div.className = 'plaka-row'; div.id = id;
+  div.innerHTML = `
+    <input type="text" placeholder="Meşe 18mm, Kayın 12mm..." value="${ad}" oninput="plakaKaydet()" autocomplete="off">
+    <input type="text" placeholder="120" value="${en}" oninput="plakaKaydet()">
+    <input type="text" placeholder="240" value="${boy}" oninput="plakaKaydet()">
+    <input type="text" placeholder="1.8" value="${kal}" oninput="plakaKaydet()">
+    <input type="number" placeholder="1" min="1" value="${adet}" oninput="plakaKaydet()">
+    <button class="bico" onclick="removeRow('${id}');plakaKaydet()">×</button>
+  `;
+  document.getElementById('plakaList').appendChild(div);
+}
+
+function renderPlaka(){
+  document.getElementById('plakaList').innerHTML = '';
+  _plakaCnt = 0;
+  if(plakaStok.length === 0){ plakaEkle(); return; }
+  plakaStok.forEach(p => plakaEkle(p.ad, p.en, p.boy, p.kal, p.adet));
+}
+
+function plakaKaydet(){
+  plakaStok = [];
+  document.querySelectorAll('#plakaList .plaka-row').forEach(row => {
+    const inp = row.querySelectorAll('input');
+    plakaStok.push({
+      ad:   inp[0].value,
+      en:   parseFloat(inp[1].value)||0,
+      boy:  parseFloat(inp[2].value)||0,
+      kal:  parseFloat(inp[3].value)||0,
+      adet: parseInt(inp[4].value)||1
+    });
+  });
+  syncYaz('fhp_plaka', plakaStok);
+}
+
+function plakaAnaliz(){
+  plakaKaydet();
+  const sonucDiv = document.getElementById('plakaAnalizSonuc');
+  const ic = document.getElementById('plakaAnalizIc');
+  
+  if(plakaStok.length === 0){ alert('Önce plaka ekleyin!'); return; }
+  if(savedProds.length === 0){ alert('Kayıtlı ürün yok!'); return; }
+
+  let html = '';
+  let uretebilirSayisi = 0;
+
+  savedProds.forEach(u => {
+    if(!u.snapshot || !u.snapshot.ahsaplar || !u.snapshot.ahsaplar.length) return;
+    
+    // Bu ürünün ahşap parçaları
+    const parcalar = u.snapshot.ahsaplar.filter(a => 
+      parseFloat(a.en)>0 && parseFloat(a.boy)>0 && parseFloat(a.kal)>0
+    );
+    if(parcalar.length === 0) return;
+
+    // Her plaka için kaç adet üretebilir?
+    let enIyiPlaka = null;
+    let enIyiAdet = 0;
+    let enIyiDetay = [];
+
+    plakaStok.forEach(plaka => {
+      if(plaka.en <= 0 || plaka.boy <= 0 || plaka.kal <= 0 || plaka.adet <= 0) return;
+      
+      // Her parça için bu plakadan kaç tane çıkar?
+      let adetBuPlaka = Infinity;
+      const detay = [];
+
+      parcalar.forEach(a => {
+        const pEn  = parseFloat(a.en)||0;
+        const pBoy = parseFloat(a.boy)||0;
+        const pKal = parseFloat(a.kal)||0;
+
+        // Kalınlık eşleşmeli (±1mm tolerans)
+        const kalOk = Math.abs(pKal - plaka.kal) <= 0.1;
+        if(!kalOk){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Kalınlık uyumsuz ('+pKal+'≠'+plaka.kal+')'}); return; }
+
+        // Plakadan kaç parça çıkar (2 yönlü deneme)
+        const fits1 = Math.floor(plaka.en/pEn) * Math.floor(plaka.boy/pBoy);
+        const fits2 = Math.floor(plaka.en/pBoy) * Math.floor(plaka.boy/pEn);
+        const fits  = Math.max(fits1, fits2);
+
+        if(fits === 0){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Plakaya sığmıyor ('+pEn+'×'+pBoy+' cm)'}); return; }
+        
+        // Plaka adediyle çarparak kaç ürün üretilebilir
+        const urunAdedi = Math.floor((fits * plaka.adet));
+        detay.push({ad: a.aciklama||'Parça', ok:true, fits, urunAdedi, pEn, pBoy});
+        adetBuPlaka = Math.min(adetBuPlaka, urunAdedi);
+      });
+
+      if(adetBuPlaka === Infinity) adetBuPlaka = 0;
+      
+      if(adetBuPlaka > enIyiAdet){
+        enIyiAdet = adetBuPlaka;
+        enIyiPlaka = plaka;
+        enIyiDetay = detay;
+      }
+    });
+
+    const uretebilir = enIyiAdet > 0;
+    if(uretebilir) uretebilirSayisi++;
+
+    const foto = u.foto ? `<img src="${u.foto}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;margin-right:10px;vertical-align:middle;">` : '';
+    
+    html += `<div class="analiz-kart ${uretebilir?'uretebilir':'yetersiz'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;">${foto}<div>
+          <div class="analiz-urun-ad">${escH(u.ad)}</div>
+          ${enIyiPlaka ? `<div class="analiz-plaka-ad">📋 ${escH(enIyiPlaka.ad||'Plaka')} (${enIyiPlaka.en}×${enIyiPlaka.boy}×${enIyiPlaka.kal} cm, ${enIyiPlaka.adet} adet)</div>` : '<div class="analiz-plaka-ad" style="color:#ff6b6b;">❌ Uygun plaka yok</div>'}
+        </div></div>
+        ${uretebilir ? `<div style="text-align:right;"><div class="analiz-adet">${enIyiAdet}</div><div style="font-size:11px;color:var(--muted);">adet üretilebilir</div></div>` : '<div style="color:#ff6b6b;font-size:13px;font-weight:700;">Üretilemez</div>'}
+      </div>
+      <div class="analiz-parcalar">
+        ${enIyiDetay.map(d => `<span class="analiz-parca ${d.ok?'ok':'fail'}">${escH(d.ad)}: ${d.ok ? d.fits+' adet/plaka' : d.neden}</span>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  if(html === ''){ ic.innerHTML = '<div class="empty"><div class="eb">🪵</div><p>Ürünlerde ahşap ölçüsü girilmemiş.</p></div>'; }
+  else {
+    ic.innerHTML = `<div style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+      ${uretebilirSayisi} üretebilir / ${savedProds.filter(u=>u.snapshot?.ahsaplar?.some(a=>parseFloat(a.en)>0)).length} ürün analiz edildi
+    </div>` + html;
+  }
+  
+  sonucDiv.style.display = 'block';
+  sonucDiv.scrollIntoView({behavior:'smooth'});
+}
 
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
