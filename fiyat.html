@@ -800,7 +800,12 @@ function syncDurum(tip, mesaj) {
 
 function syncYaz(key, value) {
   localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  _syncQueue[key] = value;
+  // fhp_urunler gönderilirken fotoğrafları çıkar (Sheets limiti aşılmasın)
+  let syncValue = value;
+  if(key === 'fhp_urunler' && Array.isArray(value)) {
+    syncValue = value.map(u => { const {foto, ...rest} = u; return rest; });
+  }
+  _syncQueue[key] = syncValue;
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(syncGonder, 1500);
   syncDurum('bekle', 'Kaydediliyor...');
@@ -836,7 +841,14 @@ async function syncYukle() {
     const d = await r.json();
     if(!d.ok || !d.value) { syncDurum('ok', '☁️ Bağlı'); return; }
     const all = d.value;
-    if(all['fhp_urunler']      != null) { savedProds  = all['fhp_urunler'];  localStorage.setItem('fhp_urunler',  JSON.stringify(savedProds));  }
+    if(all['fhp_urunler'] != null) {
+      // Sheets'ten gelen veriye localStorage'daki fotoları geri ekle
+      const localProds = JSON.parse(localStorage.getItem('fhp_urunler') || '[]');
+      const fotoMap = {};
+      localProds.forEach(u => { if(u.id && u.foto) fotoMap[u.id] = u.foto; });
+      savedProds = all['fhp_urunler'].map(u => ({...u, foto: fotoMap[u.id] || null}));
+      localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+    }
     if(all['fhp_sabit']        != null) { sabitList   = all['fhp_sabit'];    localStorage.setItem('fhp_sabit',    JSON.stringify(sabitList));   }
     if(all['fhp_hammadde']     != null) { hammaddeler = all['fhp_hammadde']; localStorage.setItem('fhp_hammadde', JSON.stringify(hammaddeler)); }
     if(all['fhp_plat']         != null) { platData    = all['fhp_plat'];     localStorage.setItem('fhp_plat',     JSON.stringify(platData));    }
