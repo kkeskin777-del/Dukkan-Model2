@@ -816,7 +816,20 @@ function syncDurum(tip, mesaj) {
 
 function syncYaz(key, value) {
   localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  _syncQueue[key] = value;
+  if(key === 'fhp_urunler' && Array.isArray(value)) {
+    // Her ürünü ayrı key'e böl — foto ayrı saklanır
+    const ids = value.map(u => u.id);
+    _syncQueue['fhp_urunler_idx'] = ids;
+    value.forEach(u => {
+      if(u.foto && u.id) {
+        _syncQueue['fhp_foto_'+u.id] = u.foto; // foto ayrı key
+      }
+      const {foto, ...rest} = u;
+      _syncQueue['fhp_u_'+u.id] = rest; // ürün fotosuz
+    });
+  } else {
+    _syncQueue[key] = value;
+  }
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(syncGonder, 1500);
   syncDurum('bekle', 'Kaydediliyor...');
@@ -852,7 +865,20 @@ async function syncYukle() {
     const d = await r.json();
     if(!d.ok || !d.value) { syncDurum('ok', '☁️ Bağlı'); return; }
     const all = d.value;
-    if(all['fhp_urunler'] != null) { savedProds = all['fhp_urunler']; localStorage.setItem('fhp_urunler', JSON.stringify(savedProds)); }
+    if(all['fhp_urunler_idx'] != null) {
+      // Ürünler ayrı key'lerde, fotoları da geri ekle
+      const ids = all['fhp_urunler_idx'];
+      savedProds = ids.map(id => {
+        const u = all['fhp_u_'+id];
+        if(!u) return null;
+        return {...u, foto: all['fhp_foto_'+id] || null};
+      }).filter(Boolean);
+      localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+    } else if(all['fhp_urunler'] != null) {
+      // Eski format (geriye dönük uyumluluk)
+      savedProds = all['fhp_urunler'];
+      localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+    }
     if(all['fhp_sabit']        != null) { sabitList   = all['fhp_sabit'];    localStorage.setItem('fhp_sabit',    JSON.stringify(sabitList));   }
     if(all['fhp_hammadde']     != null) { hammaddeler = all['fhp_hammadde']; localStorage.setItem('fhp_hammadde', JSON.stringify(hammaddeler)); }
     if(all['fhp_plat']         != null) { platData    = all['fhp_plat'];     localStorage.setItem('fhp_plat',     JSON.stringify(platData));    }
@@ -897,17 +923,17 @@ function fotoOku(file){
     img.onload = () => {
       // Canvas ile yeniden boyutlandır ve sıkıştır
       const canvas = document.createElement('canvas');
-      const MAX = 300; // max 300px kenar
+      const MAX = 160; // max 160px kenar — küçük thumbnail yeterli
       let w = img.width, h = img.height;
       if(w > h) { if(w > MAX){ h = Math.round(h*MAX/w); w = MAX; } }
       else       { if(h > MAX){ w = Math.round(w*MAX/h); h = MAX; } }
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      // Kaliteyi düşürerek 40KB altına sıkıştır
-      let quality = 0.7;
+      // Kaliteyi düşürerek 15KB altına sıkıştır
+      let quality = 0.6;
       let b64 = canvas.toDataURL('image/jpeg', quality);
-      while(b64.length > 40000 && quality > 0.1){
-        quality -= 0.1;
+      while(b64.length > 15000 && quality > 0.05){
+        quality -= 0.05;
         b64 = canvas.toDataURL('image/jpeg', quality);
       }
       currentFotoB64 = b64;
