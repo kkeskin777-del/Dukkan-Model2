@@ -1895,12 +1895,10 @@ function hesapla(){
   platformlar.forEach(p=>{
     const koR = p.komisyon/100;
     const kdvOrani = p.kdvOrani||0;
-    // Instagram, Instagram KDV'li, Diğer hariç → kargo KDV'siz girildi, KDV ekle
+    // Kargo zaten getPlatforms'da KDV eklenmiş olarak geliyor
     const isManuel = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
-    const kgHam = p.kargo||0;
-    // KDV'li platformlarda kargo KDV'siz girildi → %KDV ekle
-    const kg = (!isManuel && kdvOrani>0) ? kgHam*(1+kdvOrani) : kgHam;
-    const kgKdv = kg - kgHam; // kargoya eklenen KDV
+    const kg = p.kargo||0;
+    const kgHam = kg;
     if(koR>=1){
       html+=`<div class="rbox"><div class="rplat"><span>${p.emoji} ${p.name}</span><span class="badge" style="background:rgba(255,107,107,.15);color:var(--a1)">⚠️ Komisyon %100+</span></div></div>`;
       return;
