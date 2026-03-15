@@ -23,16 +23,17 @@
     pointer-events:none;z-index:0;}
   .wrap{max-width:1140px;margin:0 auto;padding:24px;position:relative;z-index:1;}
 
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:100;background:var(--bg);}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;}
   .logo{font-family:'Libre Baskerville',serif;font-size:23px;font-weight:700;letter-spacing:1px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
   .logo small{font-weight:400;font-size:11px;display:block;-webkit-text-fill-color:var(--muted);color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
 
-  .tab-nav{display:flex;gap:5px;background:var(--surface);padding:5px;border-radius:14px;border:1px solid var(--border);flex-wrap:wrap;}
+  .tab-nav{display:flex;gap:5px;background:var(--surface);padding:5px;border-radius:14px;border:1px solid var(--border);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+  .tab-nav::-webkit-scrollbar{display:none;}
   .tb{font-family:'Nunito',sans-serif;padding:8px 14px;border-radius:10px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;font-weight:500;transition:all .25s;white-space:nowrap;}
   .tb.tb-urunler{font-size:17px;font-weight:600;}
   .tb:hover{color:var(--text);background:var(--surface2);}
   .tb.active{background:var(--grad);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(167,139,250,.25);}
-  .tab{display:none;}.tab.active{display:block;min-height:60vh;}
+  .tab{display:none;}.tab.active{display:block;}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:16px;position:relative;overflow:hidden;transition:border-color .25s,box-shadow .25s,transform .25s;animation:cardIn .4s ease both;}
   .card:hover{border-color:var(--a4);box-shadow:0 8px 32px rgba(96,165,250,.08);}
