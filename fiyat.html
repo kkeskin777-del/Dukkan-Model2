@@ -894,7 +894,7 @@ const BASLANGIC_PLAT = [
   {emoji:'🟡', name:'Hepsiburada', komisyon:''},
   {emoji:'🔵', name:'n11',         komisyon:''},
   {emoji:'📦', name:'Amazon TR',   komisyon:''},
-  {emoji:'🌿', name:'Etsy',        komisyon:''},
+  {emoji:'🌿', name:'Etsy',        komisyon:'', gumrukVergi:'3.2', ekVergi:'15', tasiyiciBedel:'1'},
   {emoji:'🟣', name:'Shopier',     komisyon:''},
 ];
 
@@ -1170,7 +1170,18 @@ function renderPlatList(){
   container.innerHTML = '';
   cnt.plat = 0;
   const data = platData || BASLANGIC_PLAT;
-  data.forEach(p => addPlat(p.emoji, p.name, p.komisyon, p.kdv !== undefined ? p.kdv : 20, p.kargo||'0', p.netKarPlat||'500', p.gumrukVergi||'0', p.ekVergi||'0', p.tasiyiciBedel||'0'));
+  data.forEach(p => {
+    const isEtsy = (p.name||'').toLowerCase().includes('etsy');
+    addPlat(
+      p.emoji, p.name, p.komisyon,
+      p.kdv !== undefined ? p.kdv : 20,
+      p.kargo||'0',
+      p.netKarPlat||'500',
+      p.gumrukVergi !== undefined ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
+      p.ekVergi     !== undefined ? p.ekVergi     : (isEtsy ? '15'  : '0'),
+      p.tasiyiciBedel !== undefined ? p.tasiyiciBedel : (isEtsy ? '1' : '0')
+    );
+  });
 }
 
 function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKarPlat='500', gumrukVergi='0', ekVergi='0', tasiyiciBedel='0'){
@@ -3177,7 +3188,15 @@ function duzenleUrun(idx){
     // 6. Platformları doldur
     if(snap.platlar && snap.platlar.length){
       document.getElementById('platList').innerHTML = ''; cnt.plat = 0;
-      snap.platlar.forEach(p => addPlat(p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500', p.gumrukVergi||'0', p.ekVergi||'0', p.tasiyiciBedel||'0'));
+      snap.platlar.forEach(p => {
+        const isEtsy = (p.name||'').toLowerCase().includes('etsy');
+        addPlat(
+          p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500',
+          p.gumrukVergi !== undefined && p.gumrukVergi !== '' ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
+          p.ekVergi     !== undefined && p.ekVergi     !== '' ? p.ekVergi     : (isEtsy ? '15'  : '0'),
+          p.tasiyiciBedel !== undefined && p.tasiyiciBedel !== '' ? p.tasiyiciBedel : (isEtsy ? '1' : '0')
+        );
+      });
       savePlatData();
     }
   } else {
