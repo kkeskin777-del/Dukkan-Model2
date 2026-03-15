@@ -3466,13 +3466,18 @@ function siparisGelireGonder(s){
     giderEklendi++;
   }
 
-  // Kargo (zaten KDV dahil)
+  // Kargo
   if(pd && pd.kargo > 0){
-    const kargoKdvsiz = kdv>0 ? pd.kargo*adet/(1+kdv/100) : pd.kargo*adet;
-    const kargoKdvT   = pd.kargo*adet - kargoKdvsiz;
+    const isManuelPlat = ['instagram','diğer','diger'].some(x=>(s.platform||'').toLowerCase().includes(x));
+    const kargoDahil = pd.kargo * adet;
+    // Manuel platformlarda KDV dahil girildi → KDV'yi içinden çıkar
+    // Normal platformlarda kargo zaten *1.2 uygulanmış → orijinal KDV'siz değer = kargo/1.2
+    const kargoKdvOrani = kdv > 0 ? kdv : 20;
+    const kargoHaric = kargoDahil / (1 + kargoKdvOrani/100);
+    const kargoKdvT  = kargoDahil - kargoHaric;
     giderler.unshift({
       id: Date.now()+2, ad: 'Kargo — '+adBase, tarih,
-      kdvOrani: kdv, dahil: pd.kargo*adet, hariç: kargoKdvsiz, kdvT: kargoKdvT,
+      kdvOrani: kargoKdvOrani, dahil: kargoDahil, hariç: kargoHaric, kdvT: kargoKdvT,
       _siparisId: s.id
     });
     giderEklendi++;
