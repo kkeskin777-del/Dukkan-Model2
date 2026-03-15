@@ -441,6 +441,14 @@
     .plaka-row{grid-template-columns:1fr 1fr;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;}
     .plaka-row input:first-child{grid-column:1/-1;}
   }
+
+  .opt-grup{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .opt-grup.best{border-color:rgba(107,203,119,.5);background:rgba(107,203,119,.05);}
+  .opt-grup-baslik{font-weight:700;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .opt-parca{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--a2);margin:3px;}
+  .opt-parca.fit{background:rgba(107,203,119,.1);border-color:rgba(107,203,119,.3);color:#6bcb77;}
+  .opt-kullanim{font-size:12px;color:var(--muted);margin-top:8px;}
+  .opt-bos{font-size:12px;color:var(--muted);font-style:italic;padding:12px 0;}
 </style>
 </head>
 <body>
@@ -682,6 +690,20 @@
     <div id="plakaList"></div>
     <div style="margin-top:12px;">
       <button class="btn bprim" style="width:100%;" onclick="plakaAnaliz()">🔍 Hangi Ürünleri Üretebilirim?</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="ctitle"><div class="ico iw">✂️</div>Plaka Optimizasyonu
+      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Elinizde ki plakadan ne üretebilirsiniz?</span>
+    </div>
+    <div style="display:grid;grid-template-columns:80px 80px 70px 1fr;gap:8px;align-items:end;margin-bottom:10px;">
+      <div class="fg"><label>En (cm)</label><input type="text" id="optEn" placeholder="70" autocomplete="off"></div>
+      <div class="fg"><label>Boy (cm)</label><input type="text" id="optBoy" placeholder="50" autocomplete="off"></div>
+      <div class="fg"><label>Kal (cm)</label><input type="text" id="optKal" placeholder="1.8" autocomplete="off"></div>
+      <div><button class="btn bprim" style="width:100%;margin-top:20px;" onclick="plakaOptimizasyon()">🔍 Optimize Et</button></div>
+    </div>
+    <div id="optSonuc" style="display:none;">
+      <div id="optIc"></div>
     </div>
   </div>
   <div class="card" id="plakaAnalizSonuc" style="display:none;">
@@ -2538,6 +2560,146 @@ function plakaAnaliz(){
   
   sonucDiv.style.display = 'block';
   sonucDiv.scrollIntoView({behavior:'smooth'});
+}
+
+
+// ════════════ PLAKA OPTİMİZASYON ════════════
+function plakaOptimizasyon(){
+  const pEn  = parseFloat(document.getElementById('optEn').value)||0;
+  const pBoy = parseFloat(document.getElementById('optBoy').value)||0;
+  const pKal = parseFloat(document.getElementById('optKal').value)||0;
+  const sonuc = document.getElementById('optSonuc');
+  const ic    = document.getElementById('optIc');
+
+  if(pEn<=0||pBoy<=0){ alert('En ve boy giriniz!'); return; }
+  if(savedProds.length===0){ alert('Kayıtlı ürün yok!'); return; }
+
+  // Tüm ürünlerin tüm parçalarını topla
+  const tumParcalar = [];
+  savedProds.forEach((u,ui) => {
+    if(!u.snapshot||!u.snapshot.ahsaplar) return;
+    u.snapshot.ahsaplar.forEach((a,ai) => {
+      const en=parseFloat(a.en)||0, boy=parseFloat(a.boy)||0, kal=parseFloat(a.kal)||0;
+      if(en<=0||boy<=0) return;
+      // Kalınlık kontrolü (0 girilmişse atla, girilmişse ±0.1 tolerans)
+      if(pKal>0 && kal>0 && Math.abs(kal-pKal)>0.1) return;
+      // Bu parça plakaya sığıyor mu?
+      const sigNormal = en<=pEn && boy<=pBoy;
+      const sigDonuk  = boy<=pEn && en<=pBoy;
+      if(!sigNormal && !sigDonuk) return;
+      const donuk = !sigNormal && sigDonuk;
+      const gEn  = donuk ? boy : en;
+      const gBoy = donuk ? en  : boy;
+      tumParcalar.push({
+        urunIdx:ui, urunAd:u.ad, parcaIdx:ai,
+        parcaAd: a.aciklama||('Parça '+(ai+1)),
+        en, boy, kal, gEn, gBoy, donuk,
+        foto: u.foto||null
+      });
+    });
+  });
+
+  if(tumParcalar.length===0){
+    ic.innerHTML='<div class="opt-bos">Bu ölçüde plakaya sığan parça bulunamadı.</div>';
+    sonuc.style.display='block'; return;
+  }
+
+  // Guillotine strip packing — greedy yaklaşım
+  // Plakayı strip'lere bölerek tüm parça kombinasyonlarını dene
+  const gruplar = optHesapla(tumParcalar, pEn, pBoy);
+
+  if(gruplar.length===0){
+    ic.innerHTML='<div class="opt-bos">Uygun kombinasyon bulunamadı.</div>';
+    sonuc.style.display='block'; return;
+  }
+
+  // En iyi grubu en yüksek kullanım oranına göre sırala
+  gruplar.sort((a,b)=>b.kullanim-a.kullanim);
+
+  let html2 = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+    ${gruplar.length} farklı kombinasyon bulundu — kullanım oranına göre sıralandı
+  </div>`;
+
+  gruplar.slice(0,8).forEach((g,gi) => {
+    const isBest = gi===0;
+    html2 += `<div class="opt-grup ${isBest?'best':''}">
+      <div class="opt-grup-baslik">
+        ${isBest?'⭐':'📋'} Kombinasyon ${gi+1}
+        <span style="font-size:11px;color:${isBest?'#6bcb77':'var(--muted)'};">
+          Alan kullanımı: %${g.kullanim.toFixed(1)}
+        </span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;">
+        ${g.parcalar.map(p=>`
+          <span class="opt-parca fit">
+            ${p.foto?`<img src="${p.foto}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;">`:'' }
+            <strong>${escH(p.urunAd)}</strong> › ${escH(p.parcaAd)}
+            (${p.en}×${p.boy} cm${p.donuk?' 🔄':''})
+          </span>`).join('')}
+      </div>
+      <div class="opt-kullanim">
+        Kullanılan alan: ${fmt2(g.kullanilanAlan)} cm² / ${fmt2(pEn*pBoy)} cm²
+        &nbsp;·&nbsp; Kalan: ${fmt2(pEn*pBoy - g.kullanilanAlan)} cm²
+      </div>
+    </div>`;
+  });
+
+  ic.innerHTML = html2;
+  sonuc.style.display='block';
+  sonuc.scrollIntoView({behavior:'smooth'});
+}
+
+function fmt2(n){ return Math.round(n*10)/10; }
+
+function optHesapla(parcalar, pEn, pBoy){
+  const gruplar = [];
+  const n = parcalar.length;
+
+  // Tüm alt kümeleri dene (max 12 parça — daha fazlası çok yavaş)
+  const maxParca = Math.min(n, 12);
+  const parcaSubset = parcalar.slice(0, maxParca);
+
+  // Greedy strip packing ile kombinasyonlar oluştur
+  // Her parçayı başlangıç noktası olarak al
+  for(let start=0; start<parcaSubset.length; start++){
+    const grup = [];
+    const kullanilan = []; // {x, y, en, boy}
+
+    // Boş alan listesi (guillotine)
+    const bos = [{x:0, y:0, en:pEn, boy:pBoy}];
+
+    for(let i=0; i<parcaSubset.length; i++){
+      const idx = (start+i) % parcaSubset.length;
+      const p = parcaSubset[idx];
+      // Uygun boş alan bul (first fit)
+      let yerlestirildi = false;
+      for(let b=0; b<bos.length; b++){
+        if(p.gEn<=bos[b].en && p.gBoy<=bos[b].boy){
+          // Yerleştir
+          grup.push({...p});
+          const alan = bos.splice(b,1)[0];
+          // Kalan alanları böl (guillotine)
+          if(alan.en - p.gEn > 0)
+            bos.push({x:alan.x+p.gEn, y:alan.y, en:alan.en-p.gEn, boy:p.gBoy});
+          if(alan.boy - p.gBoy > 0)
+            bos.push({x:alan.x, y:alan.y+p.gBoy, en:alan.en, boy:alan.boy-p.gBoy});
+          yerlestirildi = true;
+          break;
+        }
+      }
+    }
+
+    if(grup.length>0){
+      const kullanilanAlan = grup.reduce((s,p)=>s+p.gEn*p.gBoy, 0);
+      const kullanim = kullanilanAlan/(pEn*pBoy)*100;
+      // Aynı parça seti var mı kontrol et
+      const key = grup.map(p=>p.urunIdx+'-'+p.parcaIdx).sort().join(',');
+      if(!gruplar.find(g=>g.key===key)){
+        gruplar.push({parcalar:grup, kullanilanAlan, kullanim, key});
+      }
+    }
+  }
+  return gruplar;
 }
 
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
