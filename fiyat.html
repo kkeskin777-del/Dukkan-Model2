@@ -23,7 +23,7 @@
     pointer-events:none;z-index:0;}
   .wrap{max-width:1140px;margin:0 auto;padding:24px;position:relative;z-index:1;}
 
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:100;background:var(--bg);}
   .logo{font-family:'Libre Baskerville',serif;font-size:23px;font-weight:700;letter-spacing:1px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
   .logo small{font-weight:400;font-size:11px;display:block;-webkit-text-fill-color:var(--muted);color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
 
@@ -32,7 +32,7 @@
   .tb.tb-urunler{font-size:17px;font-weight:600;}
   .tb:hover{color:var(--text);background:var(--surface2);}
   .tb.active{background:var(--grad);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(167,139,250,.25);}
-  .tab{display:none;}.tab.active{display:block;}
+  .tab{display:none;}.tab.active{display:block;min-height:60vh;}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:16px;position:relative;overflow:hidden;transition:border-color .25s,box-shadow .25s,transform .25s;animation:cardIn .4s ease both;}
   .card:hover{border-color:var(--a4);box-shadow:0 8px 32px rgba(96,165,250,.08);}
@@ -671,7 +671,7 @@
       <button class="btn badd" style="margin-left:auto;padding:5px 12px;font-size:12px;" onclick="plakaEkle()">➕ Plaka Ekle</button>
     </div>
     <div class="plaka-hdr" id="plakaHdr" style="display:grid;grid-template-columns:2fr 80px 80px 70px 80px 34px;gap:6px;padding:0 4px;margin-bottom:4px;">
-      <label>Hammadde / Açıklama</label>
+      <label>Hammadde Seç</label>
       <label>En (cm)</label>
       <label>Boy (cm)</label>
       <label>Kal (cm)</label>
@@ -2344,39 +2344,89 @@ document.addEventListener('keydown', function(e){
 let plakaStok = JSON.parse(localStorage.getItem('fhp_plaka') || '[]');
 let _plakaCnt = 0;
 
+function buildPlakaHmOptions(){
+  let opts = '<option value="">— Manuel gir —</option>';
+  hammaddeler.forEach((h,i)=>{
+    if(h.ad) opts += `<option value="${i}" data-kal="${h.kal||''}">${h.ad}</option>`;
+  });
+  return opts;
+}
+
 function plakaEkle(ad='', en='', boy='', kal='', adet='1'){
   _plakaCnt++;
   const id = 'plk_' + _plakaCnt;
   const div = document.createElement('div');
   div.className = 'plaka-row'; div.id = id;
   div.innerHTML = `
-    <input type="text" placeholder="Meşe 18mm, Kayın 12mm..." value="${ad}" oninput="plakaKaydet()" autocomplete="off">
+    <div style="display:flex;gap:6px;align-items:center;">
+      <select style="flex:1;" onchange="plakaHmSecildi('${id}')">
+        ${buildPlakaHmOptions()}
+      </select>
+    </div>
     <input type="text" placeholder="120" value="${en}" oninput="plakaKaydet()">
     <input type="text" placeholder="240" value="${boy}" oninput="plakaKaydet()">
-    <input type="text" placeholder="1.8" value="${kal}" oninput="plakaKaydet()">
+    <input type="text" placeholder="1.8" value="${kal}" oninput="plakaKaydet()" id="plk_kal_${id}" style="background:rgba(251,191,36,.05);">
     <input type="number" placeholder="1" min="1" value="${adet}" oninput="plakaKaydet()">
     <button class="bico" onclick="removeRow('${id}');plakaKaydet()">×</button>
   `;
   document.getElementById('plakaList').appendChild(div);
+  // Kaydedilmiş ad varsa select'i eşleştir
+  if(ad){
+    const sel = div.querySelector('select');
+    const opts = sel.querySelectorAll('option');
+    let eslesme = false;
+    opts.forEach(o => {
+      const hm = hammaddeler[parseInt(o.value)];
+      if(hm && hm.ad === ad){ sel.value = o.value; eslesme = true; }
+    });
+    if(!eslesme){ /* manuel */ }
+  }
+}
+
+function plakaHmSecildi(id){
+  const row = document.getElementById(id);
+  const sel = row.querySelector('select');
+  const kalInp = document.getElementById('plk_kal_'+id);
+  if(sel.value === ''){ kalInp.value = ''; kalInp.removeAttribute('readonly'); return; }
+  const hm = hammaddeler[parseInt(sel.value)];
+  if(hm && hm.kal){
+    kalInp.value = parseFloat(hm.kal)||'';
+    kalInp.setAttribute('readonly','true');
+    kalInp.style.borderColor = 'rgba(251,191,36,.5)';
+    kalInp.title = 'Hammaddeden otomatik alındı';
+  }
+  plakaKaydet();
 }
 
 function renderPlaka(){
   document.getElementById('plakaList').innerHTML = '';
   _plakaCnt = 0;
   if(plakaStok.length === 0){ plakaEkle(); return; }
-  plakaStok.forEach(p => plakaEkle(p.ad, p.en, p.boy, p.kal, p.adet));
+  plakaStok.forEach(p => {
+    plakaEkle(p.ad, p.en, p.boy, p.kal, p.adet);
+    if(p.hmIdx !== undefined && p.hmIdx !== ''){
+      const rows = document.querySelectorAll('#plakaList .plaka-row');
+      const row = rows[rows.length-1];
+      const sel = row?.querySelector('select');
+      if(sel){ sel.value = p.hmIdx; plakaHmSecildi(row.id); }
+    }
+  });
 }
 
 function plakaKaydet(){
   plakaStok = [];
   document.querySelectorAll('#plakaList .plaka-row').forEach(row => {
+    const sel = row.querySelector('select');
     const inp = row.querySelectorAll('input');
+    const hmIdx = sel ? parseInt(sel.value) : NaN;
+    const hm = !isNaN(hmIdx) ? hammaddeler[hmIdx] : null;
     plakaStok.push({
-      ad:   inp[0].value,
-      en:   parseFloat(inp[1].value)||0,
-      boy:  parseFloat(inp[2].value)||0,
-      kal:  parseFloat(inp[3].value)||0,
-      adet: parseInt(inp[4].value)||1
+      ad:   hm ? hm.ad : (inp[0]?.value||''),
+      hmIdx: isNaN(hmIdx) ? '' : sel.value,
+      en:   parseFloat(inp[0].value)||0,
+      boy:  parseFloat(inp[1].value)||0,
+      kal:  parseFloat(inp[2].value)||0,
+      adet: parseInt(inp[3].value)||1
     });
   });
   syncYaz('fhp_plaka', plakaStok);
