@@ -2632,6 +2632,57 @@ function plakaKaydet(){
   syncYaz('fhp_plaka', plakaStok);
 }
 
+
+function hesaplaGercekAdet(parcalar, plaka) {
+  // Kaç set sığar? Binary search ile bul
+  let low = 0, high = 1000;
+  while(low < high) {
+    const mid = Math.floor((low + high + 1) / 2);
+    if(sigiyorMu(parcalar, plaka, mid)) low = mid;
+    else high = mid - 1;
+  }
+  return low;
+}
+
+function sigiyorMu(parcalar, plaka, adet) {
+  if(adet === 0) return true;
+  // Tüm parçaları adet kadar çoğalt
+  const tumParcalar = [];
+  parcalar.forEach(a => {
+    const pEn  = parseFloat(a.en)||0;
+    const pBoy = parseFloat(a.boy)||0;
+    if(pEn > 0 && pBoy > 0) {
+      for(let i = 0; i < adet; i++) {
+        tumParcalar.push({en: pEn, boy: pBoy});
+      }
+    }
+  });
+  // Büyükten küçüğe sırala
+  tumParcalar.sort((a,b) => (b.en*b.boy) - (a.en*a.boy));
+  // Greedy guillotine packing
+  const bos = [{x:0, y:0, en:plaka.en, boy:plaka.boy}];
+  for(const p of tumParcalar) {
+    let yerlestirildi = false;
+    for(let b = 0; b < bos.length; b++) {
+      const alan = bos[b];
+      // Normal veya döndürülmüş
+      const sigN = p.en <= alan.en && p.boy <= alan.boy;
+      const sigD = p.boy <= alan.en && p.en <= alan.boy;
+      if(sigN || sigD) {
+        const gEn  = sigN ? p.en  : p.boy;
+        const gBoy = sigN ? p.boy : p.en;
+        bos.splice(b, 1);
+        if(alan.en - gEn > 0)  bos.push({x:alan.x+gEn, y:alan.y,    en:alan.en-gEn, boy:gBoy});
+        if(alan.boy - gBoy > 0) bos.push({x:alan.x,    y:alan.y+gBoy, en:alan.en,    boy:alan.boy-gBoy});
+        yerlestirildi = true;
+        break;
+      }
+    }
+    if(!yerlestirildi) return false;
+  }
+  return true;
+}
+
 function plakaAnaliz(){
   plakaKaydet();
   const sonucDiv = document.getElementById('plakaAnalizSonuc');
@@ -2697,9 +2748,9 @@ function plakaAnaliz(){
 
       if(!tümParçalarSigiyor){ adetBuPlaka = 0; }
       else if(toplamParcaAlani > 0){
-        // Plaka alanı ÷ 1 ürün toplam parça alanı (%75 verimlilik)
-        const plakaToplamAlan = plaka.en * plaka.boy * plaka.adet;
-        adetBuPlaka = Math.floor((plakaToplamAlan * 0.75) / toplamParcaAlani);
+        // Gerçek guillotine packing ile hesapla
+        // Her parçayı teker teker plakaya yerleştir, kaç ürün set sığar bul
+        adetBuPlaka = hesaplaGercekAdet(parcalar, plaka);
       } else {
         adetBuPlaka = 0;
       }
