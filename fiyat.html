@@ -3181,6 +3181,15 @@ function siparisModalAc(mevcut=null){
     +'<div class="fg" style="margin-bottom:10px;"><label>Müşteri Adı (opsiyonel)</label>'
     +'<input type="text" id="spMusteriAd" placeholder="Ör: Ahmet B." autocomplete="off" value="'+(m?escH(m.musteriAd||''):'')+'"></div>'
 
+    +'<div class="fg" style="margin-bottom:10px;"><label>Ürün (listeden seç)</label>'
+    +'<select id="spUrun" style="width:100%;" onchange="spUrunSecildi()">'
+    +'<option value="">— Seç veya manuel gir —</option>'
+    +urunSecenekler
+    +'</select></div>'
+
+    +'<div class="fg" style="margin-bottom:10px;"><label>Ürün Adı</label>'
+    +'<input type="text" id="spUrunAd" placeholder="Ürün adı..." autocomplete="off" value="'+(m?escH(m.urunAd||''):'')+'"></div>'
+
     +'<div class="fg" style="margin-bottom:10px;"><label>Platform</label>'
     +'<select id="spPlatform" style="width:100%;" onchange="spPlatformSecildi()">'
     +PLATFORMLAR_LIST.map(p=>'<option'+(m&&m.platform===p?' selected':'')+'>'+p+'</option>').join('')
@@ -3192,15 +3201,6 @@ function siparisModalAc(mevcut=null){
     +'<div class="fg"><label>📞 Telefon No</label>'
     +'<input type="text" id="spTelefon" placeholder="05XX XXX XX XX" autocomplete="off" value="'+(m?escH(m.telefon||''):'')+'"></div>'
     +'</div>'
-
-    +'<div class="fg" style="margin-bottom:10px;"><label>Ürün (listeden seç)</label>'
-    +'<select id="spUrun" style="width:100%;" onchange="spUrunSecildi()">'
-    +'<option value="">— Seç veya manuel gir —</option>'
-    +urunSecenekler
-    +'</select></div>'
-
-    +'<div class="fg" style="margin-bottom:10px;"><label>Ürün Adı</label>'
-    +'<input type="text" id="spUrunAd" placeholder="Ürün adı..." autocomplete="off" value="'+(m?escH(m.urunAd||''):'')+'"></div>'
 
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
     +'<div class="fg"><label>Adet</label><input type="number" id="spAdet" value="'+(m?m.adet:1)+'" min="1"></div>'
@@ -3247,6 +3247,9 @@ function spPlatformSecildi(){
   if(!sel||!div) return;
   const kargoPlatformlar = ['Instagram','Diğer'];
   div.style.display = kargoPlatformlar.includes(sel.value) ? 'block' : 'none';
+  // Platform değişince fiyatı güncelle
+  const urunSel = document.getElementById('spUrun');
+  if(urunSel && urunSel.value !== '') spUrunSecildi();
 }
 
 function spUrunSecildi(){
