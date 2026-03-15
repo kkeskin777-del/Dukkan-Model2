@@ -1059,6 +1059,7 @@ async function syncYukle() {
     if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
     if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
     if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
+    if(all['fhp_fusion_import'] != null){ localStorage.setItem('fhp_fusion_import', JSON.stringify(all['fhp_fusion_import'])); }
     if(all['fhp_siparis'] != null){ siparisler=all['fhp_siparis']; localStorage.setItem('fhp_siparis',JSON.stringify(siparisler)); }
     if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
     if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
@@ -1069,6 +1070,7 @@ async function syncYukle() {
     }
     renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
     syncDurum('ok', '☁️ Bağlı');
+    fusionKontrol();
   } catch(e) {
     syncDurum('hata', '⚠️ Çevrimdışı — yerel veri');
   }
@@ -3657,6 +3659,82 @@ function toast(msg, sure=3000){
   t.textContent=msg; t.style.opacity='1';
   clearTimeout(t._t); t._t=setTimeout(()=>{ t.style.opacity='0'; },sure);
 }
+
+// ════════════ FUSİON 360 KÖPRÜSÜ ════════════
+function fusionKontrol(){
+  const all = JSON.parse(localStorage.getItem('fhp_fusion_import_local') || 'null');
+  // syncYukle sonrasi gelen veri localStorage kontrol
+  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
+  if(!veri || !veri.parcalar || !veri.parcalar.length) return;
+
+  // Zaten gösterildi mi?
+  const sonGosterim = localStorage.getItem('fhp_fusion_gosterildi');
+  if(sonGosterim === veri.zaman) return;
+
+  // Banner göster
+  const banner = document.createElement('div');
+  banner.id = 'fusionBanner';
+  banner.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:8000;background:var(--surface);border:1px solid #6bcb77;border-radius:14px;padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:340px;';
+  banner.innerHTML = '<div style="font-weight:700;color:#6bcb77;margin-bottom:8px;">🔗 Fusion 360 Verisi Geldi!</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">'
+    + '<b>' + escH(veri.tasarimAd || 'Tasarım') + '</b><br>'
+    + veri.parcalar.length + ' parça hazır: '
+    + veri.parcalar.map(p=>escH(p.ad)).join(', ').substring(0,80)+'...'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button class="btn bprim" style="flex:1;font-size:12px;" onclick="fusionAktar()">✅ Forma Aktar</button>'
+    + '<button class="btn" style="font-size:12px;padding:6px 10px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);" onclick="fusionReddet()">✕</button>'
+    + '</div>';
+  document.body.appendChild(banner);
+}
+
+function fusionAktar(){
+  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
+  if(!veri || !veri.parcalar) return;
+
+  // Hesapla sekmesine geç
+  const hesaplaBtn = document.querySelector('.tb');
+  sw('hesapla', hesaplaBtn);
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  // Ahşap listesini temizle
+  document.getElementById('ahsapList').innerHTML = '';
+  cnt.ah = 0;
+
+  // Her parçayı ahşap satırı olarak ekle
+  veri.parcalar.forEach(p => {
+    addAhsap();
+    const rows = document.querySelectorAll('#ahsapList .ah-row');
+    const row  = rows[rows.length - 1];
+    const inp  = row.querySelectorAll('input');
+    if(inp[0]) inp[0].value = p.ad;   // açıklama
+    if(inp[1]) inp[1].value = p.en;   // en
+    if(inp[2]) inp[2].value = p.boy;  // boy
+    if(inp[3]) inp[3].value = p.kal;  // kalınlık
+    calcAhsapRow(row.id);
+  });
+
+  // Ürün adını tasarım adından al
+  const urunAdiEl = document.getElementById('urunAdi');
+  if(urunAdiEl && !urunAdiEl.value) urunAdiEl.value = veri.tasarimAd || '';
+
+  // İşaretlenmiş olarak kaydet
+  localStorage.setItem('fhp_fusion_gosterildi', veri.zaman);
+  fusionBannerKapat();
+  toast('✅ ' + veri.parcalar.length + ' parça Hesapla formuna aktarıldı!');
+}
+
+function fusionReddet(){
+  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
+  if(veri) localStorage.setItem('fhp_fusion_gosterildi', veri.zaman);
+  fusionBannerKapat();
+}
+
+function fusionBannerKapat(){
+  const b = document.getElementById('fusionBanner');
+  if(b) b.remove();
+}
+
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function silUrun(idx){
