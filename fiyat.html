@@ -1866,14 +1866,14 @@ function hesapla(){
             const renk = verim >= 100 ? '#6bcb77' : verim >= 70 ? '#fbbf24' : '#ff6b6b';
             const emoji = verim >= 100 ? '✅' : verim >= 70 ? '⚠️' : '❌';
             const ronvans = zamanMaliyeti > 0 ? ((hamMal + zamanMaliyeti) / (1 - koR - (kdvOrani>0?kdvOrani/(1+kdvOrani):0))) : 0;
-            return \`<div class="rrow" style="border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:4px;">
-              <span class="rl" style="color:\${renk};font-weight:700;">\${emoji} Verimlilik</span>
-              <span style="color:\${renk};font-weight:800;">\${verim.toFixed(0)}%</span>
-            </div>
-            <div class="rrow">
-              <span class="rl" style="font-size:11px;color:var(--muted);">Rövanş Fiyatı</span>
-              <span style="font-size:11px;color:var(--muted);">\${fmt(ronvans)} ₺</span>
-            </div>\`;
+            return '<div class="rrow" style="border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:4px;">'
+              + '<span class="rl" style="color:'+renk+';font-weight:700;">'+emoji+' Verimlilik</span>'
+              + '<span style="color:'+renk+';font-weight:800;">'+verim.toFixed(0)+'%</span>'
+              + '</div>'
+              + '<div class="rrow">'
+              + '<span class="rl" style="font-size:11px;color:var(--muted);">Rövanş Fiyatı</span>'
+              + '<span style="font-size:11px;color:var(--muted);">'+fmt(ronvans)+' ₺</span>'
+              + '</div>';
           })()}
           <div class="rrow hl"><span class="rl">💡 Önerilen Satış Fiyatı</span><span class="rv" style="display:flex;align-items:center;gap:8px;">${fmt(sf)} ₺ ${usdBadge}</span></div>
         </div>
