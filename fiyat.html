@@ -3230,12 +3230,35 @@ function siparisModalAc(mevcut=null){
   document.body.appendChild(modal);
 
   // Platform seçimine göre kargo alanını göster/gizle
-  setTimeout(spPlatformSecildi, 50);
-
-  // Mevcut sipariş düzenleme ise ürünü seç
+  // Mevcut sipariş düzenleme ise ürünü seç ve platformları yükle
   if(m && m.urunIdx !== null && m.urunIdx !== undefined){
     const sel = document.getElementById('spUrun');
-    if(sel) sel.value = m.urunIdx;
+    if(sel){ sel.value = m.urunIdx; spUrunSecildi(); }
+    // Platform seçimini geri yükle
+    setTimeout(()=>{
+      const platSel = document.getElementById('spPlatform');
+      if(platSel && m.platform){
+        const opt = [...platSel.options].find(o=>o.value===m.platform);
+        if(opt) platSel.value = m.platform;
+        else {
+          // Diğer seçeneğini seç
+          platSel.value = 'Diğer';
+        }
+        spPlatformSecildi();
+        // Fiyatı düzenlenen siparişten geri yükle
+        const fiyatInp = document.getElementById('spFiyat');
+        if(fiyatInp && m.fiyat) fiyatInp.value = fmt(m.fiyat);
+      }
+    }, 100);
+  } else {
+    // Yeni sipariş — platform listesi başta boş
+    const platSel = document.getElementById('spPlatform');
+    if(platSel){
+      platSel.innerHTML = '<option value="">— Önce ürün seçin —</option>'
+        + PLATFORMLAR_LIST.map(p=>'<option value="'+p+'">'+p+'</option>').join('')
+        + '<option value="Diğer">📦 Diğer (Manuel)</option>';
+    }
+    setTimeout(spPlatformSecildi, 50);
   }
 }
 
@@ -3249,7 +3272,10 @@ function spPlatformSecildi(){
   div.style.display = kargoPlatformlar.includes(sel.value) ? 'block' : 'none';
   // Platform değişince fiyatı güncelle
   const urunSel = document.getElementById('spUrun');
-  if(urunSel && urunSel.value !== '') spUrunSecildi();
+  if(urunSel && urunSel.value !== ''){
+    const u = savedProds[parseInt(urunSel.value)];
+    if(u) spPlatformFiyatGetir(u);
+  }
 }
 
 function spUrunSecildi(){
@@ -3261,13 +3287,38 @@ function spUrunSecildi(){
   const u = savedProds[parseInt(sel.value)];
   if(!u) return;
   if(adInp) adInp.value = u.ad;
-  // Platform seçimine göre fiyat getir
-  if(fiyatInp && u.platforms && u.platforms.length && platSel){
-    const platAd = platSel.value.toLowerCase();
-    const eslesen = u.platforms.find(p=>p.name.toLowerCase().includes(platAd)||platAd.includes(p.name.toLowerCase()));
-    const fiyat = eslesen ? eslesen.fiyat : u.platforms[0].fiyat;
-    fiyatInp.value = fiyat ? fmt(fiyat) : '';
+  // Ürüne ait platformları platSel'e yükle
+  if(platSel && u.platforms && u.platforms.length){
+    const mevcutDeger = platSel.value;
+    platSel.innerHTML = '';
+    u.platforms.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.name;
+      opt.textContent = p.name;
+      platSel.appendChild(opt);
+    });
+    // Diğer seçeneği ekle
+    const diger = document.createElement('option');
+    diger.value = 'Diğer'; diger.textContent = '📦 Diğer (Manuel)';
+    platSel.appendChild(diger);
+    // Önceki seçimi koru
+    if(mevcutDeger && [...platSel.options].find(o=>o.value===mevcutDeger))
+      platSel.value = mevcutDeger;
+    else
+      platSel.value = u.platforms[0].name;
   }
+  // Seçili platforma göre fiyat getir
+  spPlatformFiyatGetir(u);
+}
+
+function spPlatformFiyatGetir(u){
+  const platSel = document.getElementById('spPlatform');
+  const fiyatInp = document.getElementById('spFiyat');
+  if(!platSel||!fiyatInp||!u||!u.platforms) return;
+  const secili = platSel.value;
+  const eslesen = u.platforms.find(p=>p.name===secili);
+  if(eslesen && eslesen.fiyat) fiyatInp.value = fmt(eslesen.fiyat);
+  else fiyatInp.value = '';
 }
 
 function siparisKaydet(guncelleId){
