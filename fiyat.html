@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FiyatHesap Pro</title>
+<title>Dükkan Yönetim Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -451,13 +451,37 @@
   .opt-parca.fit{background:rgba(107,203,119,.1);border-color:rgba(107,203,119,.3);color:#6bcb77;}
   .opt-kullanim{font-size:12px;color:var(--muted);margin-top:8px;}
   .opt-bos{font-size:12px;color:var(--muted);font-style:italic;padding:12px 0;}
+
+  /* Siparişler */
+  .sp-kart{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:border-color .2s;}
+  .sp-kart:hover{border-color:var(--muted);}
+  .sp-kart.durum-uretim{border-left:3px solid #fbbf24;}
+  .sp-kart.durum-hazir{border-left:3px solid #4d96ff;}
+  .sp-kart.durum-gonderildi{border-left:3px solid #a78bfa;}
+  .sp-kart.durum-tamamlandi{border-left:3px solid #6bcb77;opacity:.75;}
+  .sp-ust{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .sp-ad{font-weight:700;font-size:14px;}
+  .sp-platform{font-size:11px;color:var(--muted);margin-top:2px;}
+  .sp-fiyat{font-weight:800;font-size:16px;color:var(--a2);white-space:nowrap;}
+  .sp-detay{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .sp-detay span{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;}
+  .sp-not{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px;}
+  .sp-aksiyonlar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .durum-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:700;}
+  .durum-badge.uretim{background:rgba(251,191,36,.15);color:#fbbf24;}
+  .durum-badge.hazir{background:rgba(77,150,255,.15);color:#4d96ff;}
+  .durum-badge.gonderildi{background:rgba(167,139,250,.15);color:#a78bfa;}
+  .durum-badge.tamamlandi{background:rgba(107,203,119,.15);color:#6bcb77;}
+  .sp-stat-kart{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;flex:1;min-width:100px;text-align:center;}
+  .sp-stat-sayi{font-size:22px;font-weight:800;color:var(--a2);}
+  .sp-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div class="logo">FiyatHesap Pro<small>Ürün Maliyet & Fiyatlandırma</small></div>
+  <div class="logo">Dükkan Yönetim Sistemi<small>Maliyet & Fiyatlandırma</small></div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0;">
     <div id="syncBar" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;color:var(--muted);min-width:120px;max-width:120px;overflow:hidden;flex-shrink:0;">
       <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .4s;"></span>
@@ -469,6 +493,7 @@
       <button class="tb"        onclick="sw('sabit',this)">⚙️ Genel Giderler</button>
       <button class="tb tb-urunler" onclick="sw('urunler',this)">📦 Ürünlerim</button>
       <button class="tb" onclick="sw('plaka',this)">🪵 Plaka Stok</button>
+      <button class="tb" onclick="sw('siparis',this)">📋 Siparişler</button>
     </div>
   </div>
 </header>
@@ -700,6 +725,26 @@
     <div id="savedList"></div>
   </div>
 </div>
+
+<div id="tab-siparis" class="tab">
+  <div class="card">
+    <div class="ctitle"><div class="ico ip">📋</div>Siparişler
+      <button class="btn badd" style="margin-left:auto;padding:5px 12px;font-size:12px;" onclick="siparisEkle()">➕ Yeni Sipariş</button>
+    </div>
+    <!-- Özet bar -->
+    <div id="siparisStat" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;"></div>
+    <!-- Filtre -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="kat-btn active" data-sf="" onclick="siparisFiltrele(this,'')">Tümü</button>
+      <button class="kat-btn" data-sf="uretim" onclick="siparisFiltrele(this,'uretim')">🔨 Üretimde</button>
+      <button class="kat-btn" data-sf="hazir" onclick="siparisFiltrele(this,'hazir')">📦 Hazır</button>
+      <button class="kat-btn" data-sf="gonderildi" onclick="siparisFiltrele(this,'gonderildi')">🚚 Gönderildi</button>
+      <button class="kat-btn" data-sf="tamamlandi" onclick="siparisFiltrele(this,'tamamlandi')">✅ Tamamlandı</button>
+    </div>
+    <div id="siparisList"></div>
+  </div>
+</div>
+
 <div id="tab-plaka" class="tab">
   <div class="card">
     <div class="ctitle"><div class="ico iw">🪵</div>Plaka Stoğu
@@ -1003,6 +1048,7 @@ async function syncYukle() {
     if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
     if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
     if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
+    if(all['fhp_siparis'] != null){ siparisler=all['fhp_siparis']; localStorage.setItem('fhp_siparis',JSON.stringify(siparisler)); }
     if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
     if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
     if(all['fhp_etsy_kur'] != null) {
@@ -1162,6 +1208,7 @@ function sw(tab, btn){
   if(tab==='sabit')     { renderSabit(); calcSabitPay(); verimYukle(); }
   if(tab==='hammadde')  renderHammadde();
   if(tab==='plaka')     { renderPlaka(); renderAnalizKayitlar('stok'); renderAnalizKayitlar('opt'); }
+  if(tab==='siparis')   renderSiparisler();
 }
 
 // ════════════ PLATFORMLAR (manuel komisyon) ════════════
@@ -3110,6 +3157,202 @@ function verimYukle(){
   if(hEl && d.hedef) hEl.value = d.hedef;
   if(sEl && d.hSaat) sEl.value = d.hSaat;
   verimGuncelle();
+}
+
+
+// ════════════ SİPARİŞLER ════════════
+let siparisler = JSON.parse(localStorage.getItem('fhp_siparis') || '[]');
+let aktifSiparisFiltre = '';
+const PLATFORMLAR_LIST = ['Trendyol','Hepsiburada','n11','Amazon TR','Etsy','Shopier','Instagram','Diğer'];
+const DURUM_LABEL = {uretim:'🔨 Üretimde', hazir:'📦 Hazır', gonderildi:'🚚 Gönderildi', tamamlandi:'✅ Tamamlandı'};
+
+function siparisEkle(){
+  const urunSecenekler = savedProds.map((u,i)=>`<option value="${i}">${escH(u.ad)}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+
+  const modal = document.createElement('div');
+  modal.id = 'siparisModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+      <div style="font-family:'Libre Baskerville',serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--a2);">➕ Yeni Sipariş</div>
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Müşteri Adı (opsiyonel)</label>
+        <input type="text" id="spMusteriAd" placeholder="Ör: Ahmet B." autocomplete="off">
+      </div>
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Platform</label>
+        <select id="spPlatform" style="width:100%;">
+          ${PLATFORMLAR_LIST.map(p=>`<option>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Ürün</label>
+        <select id="spUrun" style="width:100%;" onchange="spUrunSecildi()">
+          <option value="">— Seç veya manuel gir —</option>
+          ${urunSecenekler}
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Ürün Adı (manuel)</label>
+        <input type="text" id="spUrunAd" placeholder="Ürün adı..." autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="fg">
+          <label>Adet</label>
+          <input type="number" id="spAdet" value="1" min="1">
+        </div>
+        <div class="fg">
+          <label>Satış Fiyatı (₺)</label>
+          <input type="text" id="spFiyat" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="fg">
+          <label>Sipariş Tarihi</label>
+          <input type="date" id="spTarih" value="${today}">
+        </div>
+        <div class="fg">
+          <label>Teslim Tarihi</label>
+          <input type="date" id="spTeslim">
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:10px;">
+        <label>Durum</label>
+        <select id="spDurum" style="width:100%;">
+          <option value="uretim">🔨 Üretimde</option>
+          <option value="hazir">📦 Hazır</option>
+          <option value="gonderildi">🚚 Gönderildi</option>
+          <option value="tamamlandi">✅ Tamamlandı</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:16px;">
+        <label>Not</label>
+        <input type="text" id="spNot" placeholder="Özel ölçü, renk tercihi..." autocomplete="off">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn bprim" style="flex:1;" onclick="siparisKaydet()">💾 Kaydet</button>
+        <button class="btn" style="background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);padding:8px 16px;" onclick="siparisModalKapat()">✕ İptal</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function spUrunSecildi(){
+  const sel = document.getElementById('spUrun');
+  const adInp = document.getElementById('spUrunAd');
+  const fiyatInp = document.getElementById('spFiyat');
+  if(!sel || sel.value === '') return;
+  const u = savedProds[parseInt(sel.value)];
+  if(!u) return;
+  if(adInp) adInp.value = u.ad;
+  if(fiyatInp && u.platforms && u.platforms.length){
+    const ilkFiyat = u.platforms[0].fiyat;
+    fiyatInp.value = ilkFiyat ? fmt(ilkFiyat) : '';
+  }
+}
+
+function siparisKaydet(){
+  const musteriAd = document.getElementById('spMusteriAd')?.value.trim()||'';
+  const platform  = document.getElementById('spPlatform')?.value||'';
+  const urunIdx   = document.getElementById('spUrun')?.value;
+  const urunAd    = document.getElementById('spUrunAd')?.value.trim() || (urunIdx !== '' && savedProds[parseInt(urunIdx)] ? savedProds[parseInt(urunIdx)].ad : '');
+  const adet      = parseInt(document.getElementById('spAdet')?.value)||1;
+  const fiyat     = parseTutar(document.getElementById('spFiyat')?.value);
+  const tarih     = document.getElementById('spTarih')?.value||'';
+  const teslim    = document.getElementById('spTeslim')?.value||'';
+  const durum     = document.getElementById('spDurum')?.value||'uretim';
+  const not       = document.getElementById('spNot')?.value.trim()||'';
+
+  if(!urunAd){ alert('Ürün adı giriniz!'); return; }
+
+  const siparis = {
+    id: Date.now(),
+    musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not,
+    urunIdx: urunIdx !== '' ? parseInt(urunIdx) : null
+  };
+
+  siparisler.unshift(siparis);
+  syncYaz('fhp_siparis', siparisler);
+  siparisModalKapat();
+  renderSiparisler();
+}
+
+function siparisModalKapat(){
+  const m = document.getElementById('siparisModal');
+  if(m) m.remove();
+}
+
+function siparisDurumGuncelle(id, durum){
+  const s = siparisler.find(x=>x.id===id);
+  if(s){ s.durum = durum; syncYaz('fhp_siparis', siparisler); renderSiparisler(); }
+}
+
+function siparisSil(id){
+  if(!confirm('Bu siparişi silmek istiyor musunuz?')) return;
+  siparisler = siparisler.filter(x=>x.id!==id);
+  syncYaz('fhp_siparis', siparisler);
+  renderSiparisler();
+}
+
+function siparisFiltrele(btn, filtre){
+  aktifSiparisFiltre = filtre;
+  document.querySelectorAll('[data-sf]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSiparisler();
+}
+
+function renderSiparisler(){
+  const liste = aktifSiparisFiltre
+    ? siparisler.filter(s=>s.durum===aktifSiparisFiltre)
+    : siparisler;
+  const div = document.getElementById('siparisList');
+  if(!div) return;
+
+  // Özet
+  const stat = document.getElementById('siparisStat');
+  if(stat){
+    const toplamFiyat = siparisler.filter(s=>s.durum!=='tamamlandi').reduce((t,s)=>t+(s.fiyat*s.adet),0);
+    const sayilar = {uretim:0,hazir:0,gonderildi:0,tamamlandi:0};
+    siparisler.forEach(s=>{ if(sayilar[s.durum]!==undefined) sayilar[s.durum]++; });
+    stat.innerHTML = `
+      <div class="sp-stat-kart"><div class="sp-stat-sayi">${sayilar.uretim}</div><div class="sp-stat-lbl">🔨 Üretimde</div></div>
+      <div class="sp-stat-kart"><div class="sp-stat-sayi">${sayilar.hazir}</div><div class="sp-stat-lbl">📦 Hazır</div></div>
+      <div class="sp-stat-kart"><div class="sp-stat-sayi">${sayilar.gonderildi}</div><div class="sp-stat-lbl">🚚 Gönderildi</div></div>
+      <div class="sp-stat-kart" style="border-color:rgba(107,203,119,.3);"><div class="sp-stat-sayi" style="color:#6bcb77;">${sayilar.tamamlandi}</div><div class="sp-stat-lbl">✅ Tamamlandı</div></div>
+      <div class="sp-stat-kart" style="border-color:rgba(251,191,36,.3);flex:2;"><div class="sp-stat-sayi" style="color:var(--a2);">${fmt(toplamFiyat)} ₺</div><div class="sp-stat-lbl">Aktif Sipariş Toplamı</div></div>`;
+  }
+
+  if(liste.length===0){
+    div.innerHTML='<div class="empty"><div class="eb">📋</div><p>'+(aktifSiparisFiltre?'Bu durumda sipariş yok.':'Henüz sipariş yok.')+'</p></div>';
+    return;
+  }
+
+  div.innerHTML = liste.map(s=>{
+    const durumClass = s.durum||'uretim';
+    const teslimStr = s.teslim ? '📅 Teslim: '+s.teslim.split('-').reverse().join('.') : '';
+    const tarihStr  = s.tarih  ? s.tarih.split('-').reverse().join('.') : '';
+    return `<div class="sp-kart durum-${durumClass}">
+      <div class="sp-ust">
+        <div>
+          <div class="sp-ad">${escH(s.urunAd)}${s.adet>1?' <span style="font-size:12px;color:var(--muted);">×'+s.adet+'</span>':''}</div>
+          <div class="sp-platform">${escH(s.platform)}${s.musteriAd?' · '+escH(s.musteriAd):''} ${tarihStr?'· '+tarihStr:''}</div>
+        </div>
+        <div class="sp-fiyat">${s.fiyat>0 ? fmt(s.fiyat*s.adet)+' ₺' : '—'}</div>
+      </div>
+      ${teslimStr||s.not ? `<div class="sp-detay">${teslimStr?`<span>${teslimStr}</span>`:''}${s.not?`<span>📝 ${escH(s.not)}</span>`:''}</div>` : ''}
+      <div class="sp-aksiyonlar">
+        <span class="durum-badge ${durumClass}">${DURUM_LABEL[durumClass]||durumClass}</span>
+        <select style="font-size:11px;padding:3px 6px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;" onchange="siparisDurumGuncelle(${s.id},this.value)">
+          <option value="uretim"  ${s.durum==='uretim'  ?'selected':''}>🔨 Üretimde</option>
+          <option value="hazir"   ${s.durum==='hazir'   ?'selected':''}>📦 Hazır</option>
+          <option value="gonderildi" ${s.durum==='gonderildi'?'selected':''}>🚚 Gönderildi</option>
+          <option value="tamamlandi" ${s.durum==='tamamlandi'?'selected':''}>✅ Tamamlandı</option>
+        </select>
+        <button class="btn bdel" style="padding:3px 10px;font-size:11px;" onclick="siparisSil(${s.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
