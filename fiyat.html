@@ -2662,6 +2662,8 @@ function plakaAnaliz(){
       
       // Her parça için bu plakadan kaç tane çıkar?
       let adetBuPlaka = Infinity;
+      let toplamParcaAlani = 0;  // 1 ürün için gereken toplam alan
+      let tümParçalarSigiyor = true;
       const detay = [];
 
       parcalar.forEach(a => {
@@ -2671,29 +2673,35 @@ function plakaAnaliz(){
 
         // Kalınlık eşleşmeli (±1mm tolerans)
         const kalOk = Math.abs(pKal - plaka.kal) <= 0.1;
-        if(!kalOk){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Kalınlık uyumsuz ('+pKal+'≠'+plaka.kal+')'}); return; }
-        if(typeof toplamParcaAlani === 'undefined') var toplamParcaAlani = 0;
+        if(!kalOk){
+          tümParçalarSigiyor = false;
+          detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Kalınlık uyumsuz ('+pKal+'≠'+plaka.kal+')'});
+          return;
+        }
 
-        // Bu parçanın tek başına plakaya sığıp sığmadığını kontrol et
+        // Bu parça tek başına plakaya sığıyor mu?
         const fits1 = Math.floor(plaka.en/pEn) * Math.floor(plaka.boy/pBoy);
         const fits2 = Math.floor(plaka.en/pBoy) * Math.floor(plaka.boy/pEn);
         const fits  = Math.max(fits1, fits2);
 
-        if(fits === 0){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Plakaya sığmıyor ('+pEn+'×'+pBoy+' cm)'}); return; }
-        
-        // Parçanın alan kaplaması (1 adet için)
-        const parcaAlan = pEn * pBoy;
-        toplamParcaAlani += parcaAlan;
-        detay.push({ad: a.aciklama||'Parça', ok:true, fits, alan:parcaAlan, pEn, pBoy});
+        if(fits === 0){
+          tümParçalarSigiyor = false;
+          detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Plakaya sığmıyor ('+pEn+'×'+pBoy+' cm)'});
+          return;
+        }
+
+        // 1 ürün için bu parçanın alanını topla
+        toplamParcaAlani += pEn * pBoy;
+        detay.push({ad: a.aciklama||'Parça', ok:true, fits, pEn, pBoy});
       });
 
-      if(adetBuPlaka === Infinity) adetBuPlaka = 0;
-
-      // Gerçek hesap: plaka toplam alanı ÷ 1 ürün için gereken toplam parça alanı
-      if(adetBuPlaka !== 0 && typeof toplamParcaAlani !== 'undefined' && toplamParcaAlani > 0){
+      if(!tümParçalarSigiyor){ adetBuPlaka = 0; }
+      else if(toplamParcaAlani > 0){
+        // Plaka alanı ÷ 1 ürün toplam parça alanı (%75 verimlilik)
         const plakaToplamAlan = plaka.en * plaka.boy * plaka.adet;
-        // Alan verimliliği ~%75 (kesim payları, yönlendirme kayıpları)
         adetBuPlaka = Math.floor((plakaToplamAlan * 0.75) / toplamParcaAlani);
+      } else {
+        adetBuPlaka = 0;
       }
       
       if(adetBuPlaka > enIyiAdet){
