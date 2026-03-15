@@ -1232,7 +1232,7 @@ function renderPlatList(){
     const isEtsy = (p.name||'').toLowerCase().includes('etsy');
     addPlat(
       p.emoji, p.name, p.komisyon,
-      p.kdv !== undefined ? p.kdv : 20,
+      p.kdv !== undefined ? p.kdv : (isEtsy ? 0 : 20),
       p.kargo||'0',
       p.netKarPlat||'500',
       p.gumrukVergi !== undefined ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
@@ -3213,10 +3213,12 @@ function siparisModalAc(mevcut=null){
     +'<input type="text" id="spTelefon" placeholder="05XX XXX XX XX" autocomplete="off" value="'+(m?escH(m.telefon||''):'')+'"></div>'
     +'</div>'
 
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px;">'
     +'<div class="fg"><label>Adet</label><input type="number" id="spAdet" value="'+(m?m.adet:1)+'" min="1"></div>'
     +'<div class="fg"><label>Satış Fiyatı (₺)</label>'
     +'<input type="text" id="spFiyat" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)" value="'+(m&&m.fiyat?fmt(m.fiyat):'')+'"></div>'
+    +'<div class="fg"><label>KDV %</label>'
+    +'<input type="number" id="spKdv" placeholder="20" min="0" max="100" value="'+(m&&m.kdvOrani!==undefined?m.kdvOrani:20)+'"></div>'
     +'</div>'
 
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
@@ -3323,13 +3325,23 @@ function spUrunSecildi(){
 }
 
 function spPlatformFiyatGetir(u){
-  const platSel = document.getElementById('spPlatform');
+  const platSel  = document.getElementById('spPlatform');
   const fiyatInp = document.getElementById('spFiyat');
-  if(!platSel||!fiyatInp||!u||!u.platforms) return;
+  const kdvInp   = document.getElementById('spKdv');
+  if(!platSel||!u||!u.platforms) return;
   const secili = platSel.value;
   const eslesen = u.platforms.find(p=>p.name===secili);
-  if(eslesen && eslesen.fiyat) fiyatInp.value = fmt(eslesen.fiyat);
-  else fiyatInp.value = '';
+  if(eslesen){
+    if(fiyatInp && eslesen.fiyat) fiyatInp.value = fmt(eslesen.fiyat);
+    // KDV oranını platData'dan al
+    if(kdvInp){
+      const platSnap = (u.snapshot && u.snapshot.platlar || []).find(p=>p.name===secili);
+      const kdv = platSnap ? (parseFloat(platSnap.kdv)||0) : 0;
+      kdvInp.value = kdv;
+    }
+  } else {
+    if(fiyatInp) fiyatInp.value = '';
+  }
 }
 
 function siparisKaydet(guncelleId){
@@ -3346,6 +3358,7 @@ function siparisKaydet(guncelleId){
   const not        = document.getElementById('spNot')?.value.trim()||'';
   const kargoAdres = document.getElementById('spKargoAdres')?.value.trim()||'';
   const telefon    = document.getElementById('spTelefon')?.value.trim()||'';
+  const kdvOrani   = parseFloat(document.getElementById('spKdv')?.value)||0;
 
   if(!urunAd){ alert('Ürün adı giriniz!'); return; }
 
@@ -3353,11 +3366,11 @@ function siparisKaydet(guncelleId){
     // Güncelle
     const idx = siparisler.findIndex(x=>x.id===guncelleId);
     if(idx>=0){
-      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
+      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon,
         urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null};
     }
   } else {
-    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
+    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon,
       urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null});
   }
 
@@ -3373,11 +3386,44 @@ function siparisModalKapat(){
 
 function siparisDurumGuncelle(id, durum){
   const s = siparisler.find(x=>x.id===id);
-  if(s){
-    s.durum = durum;
-    syncYaz('fhp_siparis', siparisler);
-    renderSiparisler();
+  if(!s) return;
+  const eskiDurum = s.durum;
+  s.durum = durum;
+  syncYaz('fhp_siparis', siparisler);
+  renderSiparisler();
+  // Tamamlandı işaretlenince gelir uygulamasına otomatik kayıt
+  if(durum === 'tamamlandi' && eskiDurum !== 'tamamlandi'){
+    siparisGelireGonder(s);
   }
+}
+
+function siparisGelireGonder(s){
+  const tutar = s.fiyat * (s.adet||1);
+  if(tutar <= 0) return;
+  const kdv = s.kdvOrani !== undefined ? s.kdvOrani : 20;
+  const tarih = s.tarih || new Date().toISOString().split('T')[0];
+  const ad = escH(s.urunAd) + (s.musteriAd ? ' - ' + escH(s.musteriAd) : '') + ' (' + escH(s.platform) + ')';
+
+  // Gelir kaydı objesi — gelir uygulamasındaki formatla aynı
+  const kdvH = tutar / (1 + kdv/100);
+  const kdvT = tutar - kdvH;
+  const yeniGelir = {
+    id: Date.now(),
+    ad,
+    tarih,
+    kdvOrani: kdv,
+    dahil: tutar,
+    hariç: kdvH,
+    kdvT,
+    _siparisId: s.id  // referans
+  };
+
+  // Gelir listesini localStorage'dan al, ekle, geri yaz
+  const gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
+  gelirler.unshift(yeniGelir);
+  localStorage.setItem('mt_gelir', JSON.stringify(gelirler));
+  syncYaz('mt_gelir', gelirler);
+  toast('✅ Sipariş tamamlandı! Gelir uygulamasına otomatik kaydedildi.');
 }
 
 function siparisSil(id){
@@ -3511,6 +3557,14 @@ function siparisPopupKapat(){
   if(p) p.remove();
 }
 
+function toast(msg, sure=3000){
+  let t = document.getElementById('fiyat-toast');
+  if(!t){ t=document.createElement('div'); t.id='fiyat-toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s;';
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._t); t._t=setTimeout(()=>{ t.style.opacity='0'; },sure);
+}
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function silUrun(idx){
@@ -3590,7 +3644,7 @@ function duzenleUrun(idx){
       snap.platlar.forEach(p => {
         const isEtsy = (p.name||'').toLowerCase().includes('etsy');
         addPlat(
-          p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500',
+          p.emoji||'🛒', p.name, p.komisyon, (p.kdv !== undefined && p.kdv !== '' ? p.kdv : ((p.name||'').toLowerCase().includes('etsy') ? '0' : '20')), p.kargo||'0', p.netKarPlat||'500',
           p.gumrukVergi !== undefined && p.gumrukVergi !== '' ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
           p.ekVergi     !== undefined && p.ekVergi     !== '' ? p.ekVergi     : (isEtsy ? '15'  : '0'),
           p.tasiyiciBedel !== undefined && p.tasiyiciBedel !== '' ? p.tasiyiciBedel : (isEtsy ? '1' : '0')
