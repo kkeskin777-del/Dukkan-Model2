@@ -2665,6 +2665,7 @@ function plakaOptimizasyon(){
 
   gruplar.slice(0,8).forEach((g,gi) => {
     const isBest = gi===0;
+    const canvasId = 'optCanvas_'+gi;
     html2 += `<div class="opt-grup ${isBest?'best':''}">
       <div class="opt-grup-baslik">
         ${isBest?'⭐':'📋'} Kombinasyon ${gi+1}
@@ -2672,6 +2673,7 @@ function plakaOptimizasyon(){
           Alan kullanımı: %${g.kullanim.toFixed(1)}
         </span>
       </div>
+      ${isBest ? `<canvas id="${canvasId}" style="display:block;margin:10px 0;border-radius:8px;max-width:100%;"></canvas>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:2px;">
         ${g.parcalar.map(p=>`
           <span class="opt-parca fit">
@@ -2688,11 +2690,92 @@ function plakaOptimizasyon(){
   });
 
   ic.innerHTML = html2;
+
+  // En iyi kombinasyon için canvas çiz
+  if(gruplar.length > 0){
+    setTimeout(()=>{ cizKesimPlani('optCanvas_0', gruplar[0].parcalar, pEn, pBoy); }, 50);
+  }
+
   sonuc.style.display='block';
   sonuc.scrollIntoView({behavior:'smooth'});
 }
 
 function fmt2(n){ return Math.round(n*10)/10; }
+
+// ════════════ KESIM PLANI CANVAS ════════════
+const _OPT_RENKLER = [
+  ['#fbbf24','#78350f'],['#6bcb77','#14532d'],['#4d96ff','#1e3a8a'],
+  ['#f472b6','#831843'],['#a78bfa','#4c1d95'],['#fb923c','#7c2d12'],
+  ['#34d399','#064e3b'],['#60a5fa','#1e3a8a'],['#facc15','#713f12'],['#f87171','#7f1d1d']
+];
+
+function cizKesimPlani(canvasId, parcalar, pEn, pBoy){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const konteyner = canvas.parentElement;
+  const maxW = Math.min(konteyner.offsetWidth - 32, 500);
+  const scale = Math.min(maxW / pEn, 260 / pBoy);
+  const cW = Math.round(pEn * scale);
+  const cH = Math.round(pBoy * scale);
+  canvas.width  = cW;
+  canvas.height = cH;
+  const ctx = canvas.getContext('2d');
+
+  // Arka plan — plaka
+  ctx.fillStyle = '#1e3a5f';
+  ctx.fillRect(0, 0, cW, cH);
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, cW-2, cH-2);
+
+  // Parçaları çiz
+  parcalar.forEach((p, i) => {
+    const [bg, border] = _OPT_RENKLER[i % _OPT_RENKLER.length];
+    const x = Math.round((p.px||0) * scale);
+    const y = Math.round((p.py||0) * scale);
+    const w = Math.round(p.gEn * scale);
+    const h = Math.round(p.gBoy * scale);
+
+    // Parça arka planı
+    ctx.fillStyle = bg + '55'; // yarı saydam
+    ctx.fillRect(x+1, y+1, w-2, h-2);
+
+    // Kenar
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x+1, y+1, w-2, h-2);
+
+    // İsim etiketi
+    const etiket = (p.urunAd.length>10 ? p.urunAd.slice(0,9)+'…' : p.urunAd)
+                 + (p.parcaAd ? ' › '+(p.parcaAd.length>8?p.parcaAd.slice(0,7)+'…':p.parcaAd) : '');
+    const fontSize = Math.max(8, Math.min(11, w/7));
+    ctx.font = `bold ${fontSize}px Nunito,sans-serif`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Sadece metin sığıyorsa yaz
+    if(w > 30 && h > 16){
+      ctx.fillText(etiket, x + w/2, y + h/2 - (h>24?6:0), w-6);
+      if(h > 24){
+        ctx.font = `${Math.max(7,fontSize-2)}px Nunito,sans-serif`;
+        ctx.fillStyle = '#ffffffaa';
+        ctx.fillText(p.en+'×'+p.boy+'cm'+(p.donuk?' 🔄':''), x+w/2, y+h/2+7, w-6);
+      }
+    }
+  });
+
+  // Boyut yazıları — kenarlarda
+  ctx.font = '10px Nunito,sans-serif';
+  ctx.fillStyle = '#fbbf24aa';
+  ctx.textAlign = 'center';
+  ctx.fillText(pEn+' cm', cW/2, cH-4);
+  ctx.save();
+  ctx.translate(10, cH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(pBoy+' cm', 0, 0);
+  ctx.restore();
+}
+
 
 function optHesapla(parcalar, pEn, pBoy){
   const gruplar = [];
@@ -2719,7 +2802,7 @@ function optHesapla(parcalar, pEn, pBoy){
       for(let b=0; b<bos.length; b++){
         if(p.gEn<=bos[b].en && p.gBoy<=bos[b].boy){
           // Yerleştir
-          grup.push({...p});
+          grup.push({...p, px: bos[b].x, py: bos[b].y});
           const alan = bos.splice(b,1)[0];
           // Kalan alanları böl (guillotine)
           if(alan.en - p.gEn > 0)
