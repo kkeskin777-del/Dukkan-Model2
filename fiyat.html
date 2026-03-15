@@ -2691,12 +2691,22 @@ function plakaOptimizasyon(){
       </div>
       ${isBest ? `<canvas id="${canvasId}" style="display:block;margin:10px 0;border-radius:8px;max-width:100%;"></canvas>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:2px;">
-        ${g.parcalar.map(p=>`
-          <span class="opt-parca fit">
-            ${p.foto?`<img src="${p.foto}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;">`:'' }
-            <strong>${escH(p.urunAd)}</strong> › ${escH(p.parcaAd)}
-            (${p.en}×${p.boy} cm${p.donuk?' 🔄':''})
-          </span>`).join('')}
+        ${(()=>{
+          // Parçaları grupla: aynı parçadan kaç adet
+          const ozet = {};
+          g.parcalar.forEach(p=>{
+            const k = p.urunIdx+'-'+p.parcaIdx;
+            if(!ozet[k]) ozet[k] = {...p, adet:0};
+            ozet[k].adet++;
+          });
+          return Object.values(ozet).map(p=>`
+            <span class="opt-parca fit">
+              ${p.foto?`<img src="${p.foto}" style="width:16px;height:16px;border-radius:3px;object-fit:cover;">`:'' }
+              <strong>${escH(p.urunAd)}</strong> › ${escH(p.parcaAd)}
+              <span style="background:rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;font-weight:800;">${p.adet} adet</span>
+              (${p.en}×${p.boy} cm${p.donuk?' 🔄':''})
+            </span>`).join('');
+        })()}
       </div>
       <div class="opt-kullanim">
         Kullanılan alan: ${fmt2(g.kullanilanAlan)} cm² / ${fmt2(pEn*pBoy)} cm²
@@ -2830,52 +2840,72 @@ function cizKesimPlani(canvasId, parcalar, pEn, pBoy){
 
 function optHesapla(parcalar, pEn, pBoy){
   const gruplar = [];
-  const n = parcalar.length;
 
-  // Tüm alt kümeleri dene (max 12 parça — daha fazlası çok yavaş)
-  const maxParca = Math.min(n, 12);
-  const parcaSubset = parcalar.slice(0, maxParca);
+  // Önce unique parça tiplerini al (ürün+parça kombinasyonu)
+  const uniqueParcalar = parcalar.filter((p,i,arr) =>
+    arr.findIndex(q => q.urunIdx===p.urunIdx && q.parcaIdx===p.parcaIdx) === i
+  );
 
-  // Greedy strip packing ile kombinasyonlar oluştur
-  // Her parçayı başlangıç noktası olarak al
-  for(let start=0; start<parcaSubset.length; start++){
+  // Farklı sıralamalarla dene — her sıralamada parçaları tekrar ederek plakayı doldur
+  const sirlamalar = [];
+  // Orijinal sıra
+  sirlamalar.push([...uniqueParcalar]);
+  // Büyükten küçüğe (alan)
+  sirlamalar.push([...uniqueParcalar].sort((a,b)=>(b.gEn*b.gBoy)-(a.gEn*a.gBoy)));
+  // Küçükten büyüğe
+  sirlamalar.push([...uniqueParcalar].sort((a,b)=>(a.gEn*a.gBoy)-(b.gEn*b.gBoy)));
+  // En uzun kenara göre
+  sirlamalar.push([...uniqueParcalar].sort((a,b)=>Math.max(b.gEn,b.gBoy)-Math.max(a.gEn,a.gBoy)));
+
+  sirlamalar.forEach((siralama, si) => {
     const grup = [];
-    const kullanilan = []; // {x, y, en, boy}
-
     // Boş alan listesi (guillotine)
     const bos = [{x:0, y:0, en:pEn, boy:pBoy}];
 
-    for(let i=0; i<parcaSubset.length; i++){
-      const idx = (start+i) % parcaSubset.length;
-      const p = parcaSubset[idx];
-      // Uygun boş alan bul (first fit)
-      let yerlestirildi = false;
-      for(let b=0; b<bos.length; b++){
-        if(p.gEn<=bos[b].en && p.gBoy<=bos[b].boy){
-          // Yerleştir
-          grup.push({...p, px: bos[b].x, py: bos[b].y});
-          const alan = bos.splice(b,1)[0];
-          // Kalan alanları böl (guillotine)
-          if(alan.en - p.gEn > 0)
-            bos.push({x:alan.x+p.gEn, y:alan.y, en:alan.en-p.gEn, boy:p.gBoy});
-          if(alan.boy - p.gBoy > 0)
-            bos.push({x:alan.x, y:alan.y+p.gBoy, en:alan.en, boy:alan.boy-p.gBoy});
-          yerlestirildi = true;
-          break;
+    // Boş alan kaldığı sürece parçaları tekrar ederek yerleştir
+    let devam = true;
+    let tur = 0;
+    const maxTur = 200; // sonsuz döngü önlemi
+
+    while(devam && tur < maxTur){
+      devam = false;
+      tur++;
+      for(let pi=0; pi<siralama.length; pi++){
+        const p = siralama[pi];
+        // Tüm boş alanlarda bu parça için yer ara
+        for(let b=0; b<bos.length; b++){
+          if(p.gEn<=bos[b].en && p.gBoy<=bos[b].boy){
+            // Kaçıncı adet olduğunu say
+            const mevcutAdet = grup.filter(g=>g.urunIdx===p.urunIdx && g.parcaIdx===p.parcaIdx).length;
+            grup.push({...p, px: bos[b].x, py: bos[b].y, adet: mevcutAdet+1});
+            const alan = bos.splice(b,1)[0];
+            if(alan.en - p.gEn > 0)
+              bos.push({x:alan.x+p.gEn, y:alan.y, en:alan.en-p.gEn, boy:p.gBoy});
+            if(alan.boy - p.gBoy > 0)
+              bos.push({x:alan.x, y:alan.y+p.gBoy, en:alan.en, boy:alan.boy-p.gBoy});
+            devam = true;
+            break;
+          }
         }
       }
     }
 
-    if(grup.length>0){
+    if(grup.length > 0){
       const kullanilanAlan = grup.reduce((s,p)=>s+p.gEn*p.gBoy, 0);
       const kullanim = kullanilanAlan/(pEn*pBoy)*100;
-      // Aynı parça seti var mı kontrol et
-      const key = grup.map(p=>p.urunIdx+'-'+p.parcaIdx).sort().join(',');
+      // Özet: hangi parçadan kaç adet
+      const ozet = {};
+      grup.forEach(p=>{
+        const k = p.urunIdx+'-'+p.parcaIdx;
+        ozet[k] = (ozet[k]||0)+1;
+      });
+      const key = Object.entries(ozet).sort().map(([k,v])=>k+'x'+v).join(',');
       if(!gruplar.find(g=>g.key===key)){
-        gruplar.push({parcalar:grup, kullanilanAlan, kullanim, key});
+        gruplar.push({parcalar:grup, kullanilanAlan, kullanim, key, ozet});
       }
     }
-  }
+  });
+
   return gruplar;
 }
 
