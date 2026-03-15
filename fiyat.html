@@ -1865,13 +1865,14 @@ function hesapla(){
             const verim = netK / zamanMaliyeti * 100;
             const renk = verim >= 100 ? '#6bcb77' : verim >= 70 ? '#fbbf24' : '#ff6b6b';
             const emoji = verim >= 100 ? '✅' : verim >= 70 ? '⚠️' : '❌';
-            const ronvans = zamanMaliyeti > 0 ? ((hamMal + zamanMaliyeti) / (1 - koR - (kdvOrani>0?kdvOrani/(1+kdvOrani):0))) : 0;
+            const payda_r = kdvOrani>0 ? (1-koR-kdvOrani/(1+kdvOrani)) : (1-koR);
+            const ronvans = zamanMaliyeti > 0 && payda_r>0 ? ((hamMal + kg + tasiyiciTl + zamanMaliyeti) / payda_r) : 0;
             return '<div class="rrow" style="border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:4px;">'
               + '<span class="rl" style="color:'+renk+';font-weight:700;">'+emoji+' Verimlilik</span>'
               + '<span style="color:'+renk+';font-weight:800;">'+verim.toFixed(0)+'%</span>'
               + '</div>'
               + '<div class="rrow">'
-              + '<span class="rl" style="font-size:11px;color:var(--muted);">Rövanş Fiyatı</span>'
+              + '<span class="rl" style="font-size:11px;color:var(--muted);">%100 Verimlilik Fiyatı</span>'
               + '<span style="font-size:11px;color:var(--muted);">'+fmt(ronvans)+' ₺</span>'
               + '</div>';
           })()}
