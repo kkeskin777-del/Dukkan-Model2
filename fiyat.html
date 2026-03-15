@@ -2676,7 +2676,7 @@ function plakaOptimizasyon(){
   gruplar.sort((a,b)=>b.kullanim-a.kullanim);
 
   let html2 = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-    ${En iyi ${Math.min(gruplar.length,3)} kombinasyon — kullanım oranına göre sıralandı
+    En iyi ${Math.min(gruplar.length,3)} kombinasyon — kullanım oranına göre sıralandı
   </div>`;
 
   gruplar.slice(0,3).forEach((g,gi) => {
