@@ -692,23 +692,33 @@
       <button class="btn bprim" style="width:100%;" onclick="plakaAnaliz()">🔍 Hangi Ürünleri Üretebilirim?</button>
     </div>
   </div>
+  <div class="card" id="plakaAnalizSonuc" style="display:none;margin-top:14px;">
+    <div class="ctitle"><div class="ico ip">📊</div>Stok Analiz Sonuçları
+      <button class="btn" onclick="document.getElementById('plakaAnalizSonuc').style.display='none'" style="margin-left:auto;padding:4px 10px;font-size:12px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);">✕ Kapat</button>
+    </div>
+    <div id="plakaAnalizIc"></div>
+  </div>
   <div class="card" style="margin-top:14px;">
     <div class="ctitle"><div class="ico iw">✂️</div>Plaka Optimizasyonu
-      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Elinizde ki plakadan ne üretebilirsiniz?</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Plakadan en verimli kesimi bulur</span>
     </div>
-    <div style="display:grid;grid-template-columns:80px 80px 70px 1fr;gap:8px;align-items:end;margin-bottom:10px;">
+    <div style="display:grid;grid-template-columns:2fr 80px 80px 70px;gap:8px;align-items:end;margin-bottom:10px;">
+      <div class="fg"><label>Hammadde Seç</label>
+        <select id="optHammadde" onchange="optHammaddeSecildi()" style="width:100%;">
+          <option value="">— Manuel gir —</option>
+        </select>
+      </div>
       <div class="fg"><label>En (cm)</label><input type="text" id="optEn" placeholder="70" autocomplete="off"></div>
       <div class="fg"><label>Boy (cm)</label><input type="text" id="optBoy" placeholder="50" autocomplete="off"></div>
-      <div class="fg"><label>Kal (cm)</label><input type="text" id="optKal" placeholder="1.8" autocomplete="off"></div>
-      <div><button class="btn bprim" style="width:100%;margin-top:20px;" onclick="plakaOptimizasyon()">🔍 Optimize Et</button></div>
+      <div class="fg"><label>Kal (cm)</label><input type="text" id="optKal" placeholder="1.8" autocomplete="off" id="optKalInp"></div>
     </div>
-    <div id="optSonuc" style="display:none;">
-      <div id="optIc"></div>
-    </div>
+    <button class="btn bprim" style="width:100%;" onclick="plakaOptimizasyon()">🔍 Optimize Et</button>
   </div>
-  <div class="card" id="plakaAnalizSonuc" style="display:none;">
-    <div class="ctitle"><div class="ico ip">📊</div>Analiz Sonuçları</div>
-    <div id="plakaAnalizIc"></div>
+  <div class="card" id="optSonucKart" style="display:none;margin-top:14px;">
+    <div class="ctitle"><div class="ico ip">✂️</div>Optimizasyon Sonuçları
+      <button class="btn" onclick="document.getElementById('optSonucKart').style.display='none'" style="margin-left:auto;padding:4px 10px;font-size:12px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);">✕ Kapat</button>
+    </div>
+    <div id="optIc"></div>
   </div>
 </div>
 
@@ -957,7 +967,7 @@ async function syncYukle() {
       const el = document.getElementById('etsy_kur');
       if(el) el.value = all['fhp_etsy_kur'];
     }
-    renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect();
+    renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
     syncDurum('ok', '☁️ Bağlı');
   } catch(e) {
     syncDurum('hata', '⚠️ Çevrimdışı — yerel veri');
@@ -1041,7 +1051,7 @@ function init(){
   renderSabit();
   renderHammadde();
   renderPlatList();
-  renderSaved(); renderKategoriFiltreBtn(); refreshKategoriSelect();
+  renderSaved(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
   const savedKur = localStorage.getItem('fhp_etsy_kur');
   if(savedKur){ const el=document.getElementById('etsy_kur'); if(el) el.value=savedKur; }
   fetchUsdKur();
@@ -2438,6 +2448,7 @@ function plakaHmSecildi(id){
 function renderPlaka(){
   document.getElementById('plakaList').innerHTML = '';
   _plakaCnt = 0;
+  refreshOptHammadde();
   if(plakaStok.length === 0){ plakaEkle(); return; }
   plakaStok.forEach(p => {
     plakaEkle(p.ad, p.en, p.boy, p.kal, p.adet);
@@ -2564,11 +2575,39 @@ function plakaAnaliz(){
 
 
 // ════════════ PLAKA OPTİMİZASYON ════════════
+
+function refreshOptHammadde(){
+  const sel = document.getElementById('optHammadde');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Manuel gir —</option>';
+  hammaddeler.forEach((h,i) => {
+    if(h.ad){ const o=document.createElement('option'); o.value=i; o.textContent=h.ad; sel.appendChild(o); }
+  });
+  sel.value = prev;
+}
+
+function optHammaddeSecildi(){
+  const sel = document.getElementById('optHammadde');
+  const kalInp = document.getElementById('optKal');
+  if(!sel || sel.value===''){
+    if(kalInp){ kalInp.removeAttribute('readonly'); kalInp.style.borderColor=''; }
+    return;
+  }
+  const hm = hammaddeler[parseInt(sel.value)];
+  if(hm && hm.kal && kalInp){
+    kalInp.value = parseFloat(hm.kal)||'';
+    kalInp.setAttribute('readonly','true');
+    kalInp.style.borderColor='rgba(251,191,36,.5)';
+    kalInp.title='Hammaddeden otomatik alındı';
+  }
+}
+
 function plakaOptimizasyon(){
   const pEn  = parseFloat(document.getElementById('optEn').value)||0;
   const pBoy = parseFloat(document.getElementById('optBoy').value)||0;
   const pKal = parseFloat(document.getElementById('optKal').value)||0;
-  const sonuc = document.getElementById('optSonuc');
+  const sonuc = document.getElementById('optSonucKart');
   const ic    = document.getElementById('optIc');
 
   if(pEn<=0||pBoy<=0){ alert('En ve boy giriniz!'); return; }
@@ -2601,7 +2640,8 @@ function plakaOptimizasyon(){
 
   if(tumParcalar.length===0){
     ic.innerHTML='<div class="opt-bos">Bu ölçüde plakaya sığan parça bulunamadı.</div>';
-    sonuc.style.display='block'; return;
+    sonuc.style.display='block';
+    sonuc.scrollIntoView({behavior:'smooth'}); return;
   }
 
   // Guillotine strip packing — greedy yaklaşım
@@ -2610,7 +2650,8 @@ function plakaOptimizasyon(){
 
   if(gruplar.length===0){
     ic.innerHTML='<div class="opt-bos">Uygun kombinasyon bulunamadı.</div>';
-    sonuc.style.display='block'; return;
+    sonuc.style.display='block';
+    sonuc.scrollIntoView({behavior:'smooth'}); return;
   }
 
   // En iyi grubu en yüksek kullanım oranına göre sırala
