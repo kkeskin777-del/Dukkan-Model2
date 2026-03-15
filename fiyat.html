@@ -543,6 +543,10 @@
         <input type="number" id="iscilik" placeholder="0.00" min="0" step="0.01">
       </div>
       <div class="fg">
+        <label>⏱️ Üretim Süresi (saat) <span id="verimSaatHint" style="font-size:10px;color:var(--muted);font-weight:400;"></span></label>
+        <input type="number" id="uretimSaat" placeholder="Örn: 2.5" min="0" step="0.25" oninput="verimHintGuncelle()">
+      </div>
+      <div class="fg">
         <label>🏪 Sabit Gider Payı (₺) <button class="bauto" onclick="sabitOto()">🔄 Otomatik Al</button></label>
         <input type="number" id="sabitPay" placeholder="0.00" min="0" step="0.01">
       </div>
@@ -656,6 +660,26 @@
     <div class="g2">
       <div class="fg"><label>Aylık Üretim Adedi</label><input type="number" id="aylikUretim" placeholder="Örn: 20" min="1" oninput="calcSabitPay()"></div>
       <div><label>Her Ürüne Düşen</label><div class="wbar" style="margin-top:0;"><span class="wl">Ürün başına</span><span class="wv" id="urunBasina" style="color:var(--a4);">—</span></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle"><div class="ico iy">⏱️</div>Aylık Kazanç Hedefi</div>
+    <div class="ibar">Haftalık çalışma süreniz ve kazanç hedefinize göre saatlik kazanç hedefi hesaplanır. Ürün üretim süresini girince her platformda verimlilik analizi yapılır.</div>
+    <div class="g2" style="margin-bottom:12px;">
+      <div class="fg">
+        <label>🎯 Aylık Hedef Net Kâr (₺)</label>
+        <input type="text" id="verimHedef" placeholder="50.000" inputmode="decimal" autocomplete="off"
+          oninput="binAyiriciInput(this);verimGuncelle()" value="">
+      </div>
+      <div class="fg">
+        <label>⏰ Haftalık Çalışma Süresi (saat)</label>
+        <input type="number" id="verimHaftalikSaat" placeholder="Örn: 8" min="1" max="80" step="0.5"
+          oninput="verimGuncelle()" value="">
+      </div>
+    </div>
+    <div class="wbar" id="verimSaatlikGoster" style="display:none;">
+      <span class="wl">⚡ Saatlik Hedef Kazanç</span>
+      <span class="wv" id="verimSaatlikVal" style="color:var(--a2);">—</span>
     </div>
   </div>
 
@@ -978,6 +1002,7 @@ async function syncYukle() {
     if(all['fhp_plat']         != null) { platData    = all['fhp_plat'];     localStorage.setItem('fhp_plat',     JSON.stringify(platData));    }
     if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
     if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
+    if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
     if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
     if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
     if(all['fhp_etsy_kur'] != null) {
@@ -1069,7 +1094,7 @@ function init(){
   renderSabit();
   renderHammadde();
   renderPlatList();
-  renderSaved(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
+  renderSaved(); renderKategoriFiltreBtn(); refreshKategoriSelect(); verimYukle(); refreshOptHammadde();
   const savedKur = localStorage.getItem('fhp_etsy_kur');
   if(savedKur){ const el=document.getElementById('etsy_kur'); if(el) el.value=savedKur; }
   fetchUsdKur();
@@ -1134,7 +1159,7 @@ function sw(tab, btn){
     renderSaved();
     if(checkPendingUpdates()) showUpdateBanner();
   }
-  if(tab==='sabit')     { renderSabit(); calcSabitPay(); }
+  if(tab==='sabit')     { renderSabit(); calcSabitPay(); verimYukle(); }
   if(tab==='hammadde')  renderHammadde();
   if(tab==='plaka')     { renderPlaka(); renderAnalizKayitlar('stok'); renderAnalizKayitlar('opt'); }
 }
@@ -1830,6 +1855,26 @@ function hesapla(){
           ${tasiyiciTl>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Taşıyıcı ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(tasiyiciTl)} ₺</span></div>` : ''}
           ${kdvOrani>0?`<div class="rrow"><span class="rl">KDV (%${(kdvOrani*100).toFixed(0)})</span><span>${fmt(kdvT)} ₺</span></div>`:''}
           <div class="rrow"><span class="rl" style="color:var(--a3)">💚 Net Kâr</span><span style="color:var(--a3);font-weight:700">${fmt(netK)} ₺</span></div>
+          ${(()=>{
+            const saat = parseFloat(document.getElementById('uretimSaat')?.value)||0;
+            const hedef = parseTutar(document.getElementById('verimHedef')?.value);
+            const hSaat = parseFloat(document.getElementById('verimHaftalikSaat')?.value)||0;
+            if(saat<=0 || hedef<=0 || hSaat<=0) return '';
+            const saatlikHedef = hedef / (hSaat * 4.3);
+            const zamanMaliyeti = saat * saatlikHedef;
+            const verim = netK / zamanMaliyeti * 100;
+            const renk = verim >= 100 ? '#6bcb77' : verim >= 70 ? '#fbbf24' : '#ff6b6b';
+            const emoji = verim >= 100 ? '✅' : verim >= 70 ? '⚠️' : '❌';
+            const ronvans = zamanMaliyeti > 0 ? ((hamMal + zamanMaliyeti) / (1 - koR - (kdvOrani>0?kdvOrani/(1+kdvOrani):0))) : 0;
+            return \`<div class="rrow" style="border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:4px;">
+              <span class="rl" style="color:\${renk};font-weight:700;">\${emoji} Verimlilik</span>
+              <span style="color:\${renk};font-weight:800;">\${verim.toFixed(0)}%</span>
+            </div>
+            <div class="rrow">
+              <span class="rl" style="font-size:11px;color:var(--muted);">Rövanş Fiyatı</span>
+              <span style="font-size:11px;color:var(--muted);">\${fmt(ronvans)} ₺</span>
+            </div>\`;
+          })()}
           <div class="rrow hl"><span class="rl">💡 Önerilen Satış Fiyatı</span><span class="rv" style="display:flex;align-items:center;gap:8px;">${fmt(sf)} ₺ ${usdBadge}</span></div>
         </div>
       </div>`;
@@ -2079,7 +2124,8 @@ function snapshotForm(){
     dilimPay:   document.getElementById('dilimPay')?.value||'',
     dilimUcret: document.getElementById('dilimUcret')?.value||'',
     dilimAdet:  document.getElementById('dilimAdet')?.value||'',
-    etsy_kur: document.getElementById('etsy_kur')?.value||'38.50'
+    etsy_kur: document.getElementById('etsy_kur')?.value||'38.50',
+    uretimSaat: document.getElementById('uretimSaat')?.value||''
   };
 }
 
@@ -3002,6 +3048,58 @@ function renderAnalizKayitlar(tip){
     </div>`).join('');
 }
 
+
+// ════════════ VERİMLİLİK ════════════
+let verimAyarlar = JSON.parse(localStorage.getItem('fhp_verim') || '{}');
+
+function verimGuncelle(){
+  const hedef = parseTutar(document.getElementById('verimHedef')?.value)||0;
+  const hSaat = parseFloat(document.getElementById('verimHaftalikSaat')?.value)||0;
+  const goster = document.getElementById('verimSaatlikGoster');
+  const val    = document.getElementById('verimSaatlikVal');
+  if(hedef>0 && hSaat>0){
+    const saatlik = hedef/(hSaat*4.3);
+    if(goster) goster.style.display='flex';
+    if(val) val.textContent = fmt(saatlik)+' ₺/saat';
+  } else {
+    if(goster) goster.style.display='none';
+  }
+  verimHintGuncelle();
+  // Kaydet
+  verimAyarlar = {
+    hedef: document.getElementById('verimHedef')?.value||'',
+    hSaat: document.getElementById('verimHaftalikSaat')?.value||''
+  };
+  localStorage.setItem('fhp_verim', JSON.stringify(verimAyarlar));
+  syncYaz('fhp_verim', verimAyarlar);
+}
+
+function verimHintGuncelle(){
+  const hedef = parseTutar(document.getElementById('verimHedef')?.value)||0;
+  const hSaat = parseFloat(document.getElementById('verimHaftalikSaat')?.value)||0;
+  const saat  = parseFloat(document.getElementById('uretimSaat')?.value)||0;
+  const hint  = document.getElementById('verimSaatHint');
+  if(!hint) return;
+  if(hedef>0 && hSaat>0 && saat>0){
+    const saatlik = hedef/(hSaat*4.3);
+    hint.textContent = '= '+fmt(saat*saatlik)+' ₺ zaman maliyeti';
+  } else if(hedef>0 && hSaat>0){
+    const saatlik = hedef/(hSaat*4.3);
+    hint.textContent = fmt(saatlik)+' ₺/saat hedef';
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function verimYukle(){
+  const d = JSON.parse(localStorage.getItem('fhp_verim')||'{}');
+  const hEl = document.getElementById('verimHedef');
+  const sEl = document.getElementById('verimHaftalikSaat');
+  if(hEl && d.hedef) hEl.value = d.hedef;
+  if(sEl && d.hSaat) sEl.value = d.hSaat;
+  verimGuncelle();
+}
+
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function silUrun(idx){
@@ -3026,6 +3124,8 @@ function duzenleUrun(idx){
   if(urunAdiEl) urunAdiEl.value = u.ad;
   const urunKatEl = document.getElementById('urunKategori');
   if(urunKatEl) urunKatEl.value = u.kategori||'';
+  const uretimSaatEl = document.getElementById('uretimSaat');
+  if(uretimSaatEl) uretimSaatEl.value = u.snapshot?.uretimSaat||'';
 
   if(snap){
     // 2. Ahşap satırlarını temizle ve yeniden doldur
