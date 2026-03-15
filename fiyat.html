@@ -23,14 +23,14 @@
     pointer-events:none;z-index:0;}
   .wrap{max-width:1140px;margin:0 auto;padding:24px;position:relative;z-index:1;}
 
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;}
-  .logo{font-family:'Libre Baskerville',serif;font-size:23px;font-weight:700;letter-spacing:1px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-  .logo small{font-weight:400;font-size:11px;display:block;-webkit-text-fill-color:var(--muted);color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:nowrap;gap:10px;}
+  .logo{font-family:'Libre Baskerville',serif;font-size:17px;font-weight:700;letter-spacing:.5px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;}
+  .logo small{font-weight:400;font-size:9px;display:block;-webkit-text-fill-color:var(--muted);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
 
   .tab-nav{display:flex;gap:5px;background:var(--surface);padding:5px;border-radius:14px;border:1px solid var(--border);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
   .tab-nav::-webkit-scrollbar{display:none;}
-  .tb{font-family:'Nunito',sans-serif;padding:8px 14px;border-radius:10px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;font-weight:500;transition:all .25s;white-space:nowrap;}
-  .tb.tb-urunler{font-size:17px;font-weight:600;}
+  .tb{font-family:'Nunito',sans-serif;padding:6px 11px;border-radius:10px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:500;transition:all .25s;white-space:nowrap;}
+  .tb.tb-urunler{font-size:15px;font-weight:600;}
   .tb:hover{color:var(--text);background:var(--surface2);}
   .tb.active{background:var(--grad);color:#fff;font-weight:700;box-shadow:0 4px 12px rgba(167,139,250,.25);}
   .tab{display:none;}.tab.active{display:block;}
@@ -279,7 +279,7 @@
 
     /* Header */
     header{flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;}
-    .logo{font-size:16px;text-align:center;}
+    .logo{font-size:14px;text-align:left;}
     .tab-nav{justify-content:center;gap:3px;}
     .tb{font-size:12px !important;padding:6px 8px;}
     .tb.tb-urunler{font-size:13px !important;}
@@ -448,7 +448,7 @@
 
 <header>
   <div class="logo">FiyatHesap Pro<small>Ürün Maliyet & Fiyatlandırma</small></div>
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0;">
     <div id="syncBar" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;color:var(--muted);">
       <span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .4s;"></span>
       <span id="syncLbl">Yükleniyor...</span>
