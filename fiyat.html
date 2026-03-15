@@ -1341,7 +1341,14 @@ function getPlatforms(){
         emoji: row.querySelector('.plat-emoji').textContent,
         name, komisyon: kom, kdvOrani,
         kargoRaw: parseFloat(inputs[3].value)||0,
-        kargo: name.toLowerCase().includes('etsy') ? (parseFloat(inputs[3].value)||0)*etsy_kur : (parseFloat(inputs[3].value)||0),
+        kargo: (()=>{
+          const k = parseFloat(inputs[3].value)||0;
+          if(name.toLowerCase().includes('etsy')) return k * etsy_kur;
+          // Instagram, Diğer → KDV ekleme; diğer platformlar → %20 KDV ekle
+          const kdvsizPlatlar = ['instagram','diğer','diger'];
+          const kdvEkleme = !kdvsizPlatlar.some(p=>name.toLowerCase().includes(p));
+          return kdvEkleme ? k * 1.20 : k;
+        })(),
         netKarPlat: parseTutar(inputs[4].value)||500,
         gumrukVergi: parseFloat(inputs[5]?.value)||0,
         ekVergi:     parseFloat(inputs[6]?.value)||0,
@@ -1494,9 +1501,12 @@ function recalcSavedProds(){
     u.platforms = platlar.filter(p=>p.name).map(p=>{
       const koR = (parseFloat(p.komisyon)||0)/100;
       const kdvOrani = (parseFloat(p.kdv)||0)/100;
-      const isEtsyP = (p.name||'').toLowerCase().includes('etsy');
-      const kargoRaw = parseTutar(p.kargo);
-      const kg = isEtsyP ? kargoRaw * (parseFloat(snap.etsy_kur)||38.5) : kargoRaw;
+      const isEtsyP   = (p.name||'').toLowerCase().includes('etsy');
+      const isManuelP = ['instagram','diğer','diger'].some(x=>(p.name||'').toLowerCase().includes(x));
+      const kargoRaw  = isEtsyP ? parseTutar(p.kargo)*(parseFloat(snap.etsy_kur)||38.5) : parseTutar(p.kargo);
+      // KDV'li platformlarda kargo KDV'siz girildi → KDV ekle
+      const kgHamP = kargoRaw;
+      const kg     = (!isManuelP && kdvOrani>0) ? kgHamP*(1+kdvOrani) : kgHamP;
       const netKar = parseTutar(p.netKarPlat)||500;
       const gumrukR = (p.gumrukVergi||0)/100;
       const ekVergiR = (p.ekVergi||0)/100;
@@ -1884,15 +1894,18 @@ function hesapla(){
   let results=[];
   platformlar.forEach(p=>{
     const koR = p.komisyon/100;
-    const kg  = p.kargo||0;
     const kdvOrani = p.kdvOrani||0;
+    // Instagram, Instagram KDV'li, Diğer hariç → kargo KDV'siz girildi, KDV ekle
+    const isManuel = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
+    const kgHam = p.kargo||0;
+    // KDV'li platformlarda kargo KDV'siz girildi → %KDV ekle
+    const kg = (!isManuel && kdvOrani>0) ? kgHam*(1+kdvOrani) : kgHam;
+    const kgKdv = kg - kgHam; // kargoya eklenen KDV
     if(koR>=1){
       html+=`<div class="rbox"><div class="rplat"><span>${p.emoji} ${p.name}</span><span class="badge" style="background:rgba(255,107,107,.15);color:var(--a1)">⚠️ Komisyon %100+</span></div></div>`;
       return;
     }
     // sf üzerinden komisyon + KDV birlikte çözülür
-    // netK = sf - sf*koR - sf*kdv/(1+kdv) - kg - hamMal = hedef
-    // sf = (hamMal + kg + netKarHdf) / (1 - koR - kdvOrani/(1+kdvOrani))
     const gumrukR    = (p.gumrukVergi||0)/100;
     const ekVergiR   = (p.ekVergi||0)/100;
     const tasiyiciTl = (p.tasiyiciBedel||0) * (p.etsy_kur||38.5);
@@ -1916,7 +1929,12 @@ function hesapla(){
         </div>
         <div class="rrows">
           <div class="rrow"><span class="rl">Ham Maliyet</span><span>${fmt(hamMal)} ₺</span></div>
-          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?(p.isEtsy?'$'+(p.kargoRaw||kg/p.etsy_kur).toFixed(2)+' ('+fmt(kg)+' ₺)':fmt(kg)+' ₺'):'Girilmedi'}</span></div>
+          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${(()=>{
+            if(kg===0) return 'Girilmedi';
+            if(p.isEtsy) return '$'+(p.kargoRaw||kg/p.etsy_kur).toFixed(2)+' ('+fmt(kg)+' ₺)';
+            const kdvsizP = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
+            return fmt(kg)+' ₺'+((!kdvsizP&&kg>0)?' <span style="font-size:10px;color:var(--muted)">(KDV dahil)</span>':'');
+          })()}</span></div>
           <div class="rrow"><span class="rl">Komisyon (%${p.komisyon})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
           ${(gumrukT>0||ekVergiT>0||tasiyiciTl>0) ? `<div class="rrow"><span class="rl" style="color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span><span></span></div>` : ''}
           ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺</span></div>` : ''}
