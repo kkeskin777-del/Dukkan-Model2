@@ -1059,7 +1059,6 @@ async function syncYukle() {
     if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
     if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
     if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
-    if(all['fhp_fusion_import'] != null){ localStorage.setItem('fhp_fusion_import', JSON.stringify(all['fhp_fusion_import'])); }
     if(all['fhp_siparis'] != null){ siparisler=all['fhp_siparis']; localStorage.setItem('fhp_siparis',JSON.stringify(siparisler)); }
     if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
     if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
@@ -1070,7 +1069,6 @@ async function syncYukle() {
     }
     renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
     syncDurum('ok', '☁️ Bağlı');
-    fusionKontrol();
   } catch(e) {
     syncDurum('hata', '⚠️ Çevrimdışı — yerel veri');
   }
@@ -1234,7 +1232,7 @@ function renderPlatList(){
     const isEtsy = (p.name||'').toLowerCase().includes('etsy');
     addPlat(
       p.emoji, p.name, p.komisyon,
-      p.kdv !== undefined ? p.kdv : (isEtsy ? 0 : 20),
+      p.kdv !== undefined ? p.kdv : 20,
       p.kargo||'0',
       p.netKarPlat||'500',
       p.gumrukVergi !== undefined ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
@@ -1343,14 +1341,7 @@ function getPlatforms(){
         emoji: row.querySelector('.plat-emoji').textContent,
         name, komisyon: kom, kdvOrani,
         kargoRaw: parseFloat(inputs[3].value)||0,
-        kargo: (()=>{
-          const k = parseFloat(inputs[3].value)||0;
-          if(name.toLowerCase().includes('etsy')) return k * etsy_kur;
-          // Instagram, Diğer → KDV ekleme; diğer platformlar → %20 KDV ekle
-          const kdvsizPlatlar = ['instagram','diğer','diger'];
-          const kdvEkleme = !kdvsizPlatlar.some(p=>name.toLowerCase().includes(p));
-          return kdvEkleme ? k * 1.20 : k;
-        })(),
+        kargo: name.toLowerCase().includes('etsy') ? (parseFloat(inputs[3].value)||0)*etsy_kur : (parseFloat(inputs[3].value)||0),
         netKarPlat: parseTutar(inputs[4].value)||500,
         gumrukVergi: parseFloat(inputs[5]?.value)||0,
         ekVergi:     parseFloat(inputs[6]?.value)||0,
@@ -1503,22 +1494,24 @@ function recalcSavedProds(){
     u.platforms = platlar.filter(p=>p.name).map(p=>{
       const koR = (parseFloat(p.komisyon)||0)/100;
       const kdvOrani = (parseFloat(p.kdv)||0)/100;
-      const isEtsyP   = (p.name||'').toLowerCase().includes('etsy');
-      const isManuelP = ['instagram','diğer','diger'].some(x=>(p.name||'').toLowerCase().includes(x));
-      const kargoRaw  = isEtsyP ? parseTutar(p.kargo)*(parseFloat(snap.etsy_kur)||38.5) : parseTutar(p.kargo);
-      // KDV'li platformlarda kargo KDV'siz girildi → KDV ekle
-      const kgHamP = kargoRaw;
-      const kg     = (!isManuelP && kdvOrani>0) ? kgHamP*(1+kdvOrani) : kgHamP;
+      const isEtsyP = (p.name||'').toLowerCase().includes('etsy');
+      const kargoRaw = parseTutar(p.kargo);
+      const kg = isEtsyP ? kargoRaw * (parseFloat(snap.etsy_kur)||38.5) : kargoRaw;
       const netKar = parseTutar(p.netKarPlat)||500;
       const gumrukR = (p.gumrukVergi||0)/100;
       const ekVergiR = (p.ekVergi||0)/100;
       const tasiyiciTl = (p.tasiyiciBedel||0) * (p.etsy_kur||38.5);
-      const toplamKesR = koR + gumrukR + ekVergiR;
+      const isManuelR  = ['instagram','diğer','diger'].some(x=>(p.name||'').toLowerCase().includes(x));
+      const isEtsyR    = (p.name||'').toLowerCase().includes('etsy');
+      const komKdvCR   = (!isEtsyR && !isManuelR && kdvOrani>0) ? (1+kdvOrani) : 1;
+      const satisKdvRR = kdvOrani>0 ? kdvOrani/(1+kdvOrani) : 0;
+      const toplamKesR = koR*komKdvCR + gumrukR + ekVergiR + satisKdvRR;
       if(toplamKesR >= 1) return {name:p.name, fiyat:0, net:0};
-      const payda = kdvOrani>0 ? (1-toplamKesR-kdvOrani/(1+kdvOrani)) : (1-toplamKesR);
+      const payda = 1 - toplamKesR;
       const sf    = (hamMal+kg+tasiyiciTl+netKar)/payda;
-      const kom   = sf*koR;
-      const kdvT  = kdvOrani>0 ? sf*kdvOrani/(1+kdvOrani) : 0;
+      const komH  = sf*koR;
+      const kom   = komH*(komKdvCR);
+      const kdvT  = kdvOrani>0 ? sf*satisKdvRR : 0;
       const gumrukT  = sf*gumrukR;
       const ekVergiT = sf*ekVergiR;
       const netK  = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
@@ -1823,8 +1816,12 @@ function karsılastir(){
     const hamMal   = ahsapMal + disMal + iscilik + sabitPay;
     const platSon  = platformlar.filter(p=>p.komisyon/100 < 1).map(p=>{
       const koR=p.komisyon/100, kg=p.kargo||0, kdvOrani=p.kdvOrani||0;
-      const payda = kdvOrani>0 ? (1-koR-kdvOrani/(1+kdvOrani)) : (1-koR);
-      const sf    = (hamMal+kg+p.netKarPlat)/payda;
+      const isManuelK = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
+      const isEtsyK   = p.isEtsy || p.name.toLowerCase().includes('etsy');
+      const komKdvCK  = (!isEtsyK && !isManuelK && kdvOrani>0) ? (1+kdvOrani) : 1;
+      const satisKdvK = kdvOrani>0 ? kdvOrani/(1+kdvOrani) : 0;
+      const payda = 1 - koR*komKdvCK - satisKdvK;
+      const sf    = payda>0 ? (hamMal+kg+p.netKarPlat)/payda : 0;
       const sfUsd = p.isEtsy ? sf/p.etsy_kur : null;
       return {name:p.name, emoji:p.emoji, sf, sfUsd};
     });
@@ -1896,28 +1893,30 @@ function hesapla(){
   let results=[];
   platformlar.forEach(p=>{
     const koR = p.komisyon/100;
+    const kg  = p.kargo||0;
     const kdvOrani = p.kdvOrani||0;
-    // Kargo zaten getPlatforms'da KDV eklenmiş olarak geliyor
     const isManuel = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
-    const kg = p.kargo||0;
-    const kgHam = kg;
+    const isEtsyPlat = p.isEtsy || p.name.toLowerCase().includes('etsy');
     if(koR>=1){
       html+=`<div class="rbox"><div class="rplat"><span>${p.emoji} ${p.name}</span><span class="badge" style="background:rgba(255,107,107,.15);color:var(--a1)">⚠️ Komisyon %100+</span></div></div>`;
       return;
     }
-    // sf üzerinden komisyon + KDV birlikte çözülür
     const gumrukR    = (p.gumrukVergi||0)/100;
     const ekVergiR   = (p.ekVergi||0)/100;
     const tasiyiciTl = (p.tasiyiciBedel||0) * (p.etsy_kur||38.5);
-    const toplamKesR = koR + gumrukR + ekVergiR;
-    const payda  = kdvOrani>0 ? (1 - toplamKesR - kdvOrani/(1+kdvOrani)) : (1 - toplamKesR);
+    // Komisyon KDV: Etsy ve Instagram/Diğer hariç komisyona satış KDV'si eklenir
+    const komKdvCarpan = (!isEtsyPlat && !isManuel && kdvOrani>0) ? (1 + kdvOrani) : 1;
+    const satisKdvR    = kdvOrani>0 ? kdvOrani/(1+kdvOrani) : 0;
+    const payda = 1 - koR*komKdvCarpan - satisKdvR - gumrukR - ekVergiR;
     if(payda <= 0){ html+=`<div class="rbox"><div class="rplat"><span>${p.emoji} ${p.name}</span><span class="badge" style="background:rgba(255,107,107,.15);color:var(--a1)">⚠️ Kesintiler %100+</span></div></div>`; return; }
-    const sf     = (hamMal+kg+tasiyiciTl+p.netKarPlat) / payda;
-    const kom    = sf*koR;
-    const kdvT   = kdvOrani>0 ? sf*kdvOrani/(1+kdvOrani) : 0;
+    const sf        = (hamMal+kg+tasiyiciTl+p.netKarPlat) / payda;
+    const komHaric  = sf*koR;
+    const komKdvT   = komHaric*(komKdvCarpan-1);
+    const kom       = komHaric + komKdvT;
+    const kdvT      = kdvOrani>0 ? sf*satisKdvR : 0;
     const gumrukT   = sf*gumrukR;
     const ekVergiT  = sf*ekVergiR;
-    const netK   = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
+    const netK      = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
     const sfUsd = p.isEtsy ? (sf / p.etsy_kur) : null;
     results.push({platform:p, satisFiyati:sf, sfUsd, hamMal, kom, kdvT, netK, kg, gumrukT, ekVergiT, tasiyiciTl});
     const usdBadge = sfUsd ? `<span class="usd-badge">$ ${sfUsd.toFixed(2)}</span>` : '';
@@ -1929,13 +1928,9 @@ function hesapla(){
         </div>
         <div class="rrows">
           <div class="rrow"><span class="rl">Ham Maliyet</span><span>${fmt(hamMal)} ₺</span></div>
-          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${(()=>{
-            if(kg===0) return 'Girilmedi';
-            if(p.isEtsy) return '$'+(p.kargoRaw||kg/p.etsy_kur).toFixed(2)+' ('+fmt(kg)+' ₺)';
-            const kdvsizP = ['instagram','diğer','diger'].some(x=>p.name.toLowerCase().includes(x));
-            return fmt(kg)+' ₺'+((!kdvsizP&&kg>0)?' <span style="font-size:10px;color:var(--muted)">(KDV dahil)</span>':'');
-          })()}</span></div>
-          <div class="rrow"><span class="rl">Komisyon (%${p.komisyon})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
+          <div class="rrow"><span class="rl">🚚 Kargo</span><span ${kg===0?'style="color:var(--muted)"':''}>${kg>0?(p.isEtsy?'$'+(p.kargoRaw||kg/p.etsy_kur).toFixed(2)+' ('+fmt(kg)+' ₺)':fmt(kg)+' ₺'):'Girilmedi'}</span></div>
+          <div class="rrow"><span class="rl">Komisyon (%${p.komisyon}${(!isEtsyPlat&&!isManuel&&kdvOrani>0)?' +KDV':''})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
+          ${(!isEtsyPlat&&!isManuel&&komKdvT>0)?`<div class="rrow"><span class="rl" style="padding-left:12px;font-size:11px;">Komisyon KDV dahil: ${fmt(komHaric)} + ${fmt(komKdvT)} ₺</span><span></span></div>`:``}
           ${(gumrukT>0||ekVergiT>0||tasiyiciTl>0) ? `<div class="rrow"><span class="rl" style="color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span><span></span></div>` : ''}
           ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺</span></div>` : ''}
           ${ekVergiT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(ekVergiT)} ₺</span></div>` : ''}
@@ -2224,7 +2219,7 @@ function buildUrunObj(){
     kategori: document.getElementById('urunKategori')?.value || '',
     maliyet: lastResult.hamMal,
     kdv: lastResult.results.map(r=>(r.platform.kdvOrani*100).toFixed(0)+'%').join('/') || '—',
-    platforms: lastResult.results.map(r=>({name:r.platform.name, fiyat:r.satisFiyati, net:r.netK, netKarPlat:r.platform.netKarPlat||0, kom:r.kom, kg:r.kg, kdvT:r.kdvT, gumrukT:r.gumrukT||0, ekVergiT:r.ekVergiT||0, tasiyiciTl:r.tasiyiciTl||0})),
+    platforms: lastResult.results.map(r=>({name:r.platform.name, fiyat:r.satisFiyati, net:r.netK, netKarPlat:r.platform.netKarPlat||0})),
     tarih: new Date().toLocaleDateString('tr-TR'),
     foto: currentFotoB64 || null,
     snapshot: snapshotForm()
@@ -2632,57 +2627,6 @@ function plakaKaydet(){
   syncYaz('fhp_plaka', plakaStok);
 }
 
-
-function hesaplaGercekAdet(parcalar, plaka) {
-  // Kaç set sığar? Binary search ile bul
-  let low = 0, high = 1000;
-  while(low < high) {
-    const mid = Math.floor((low + high + 1) / 2);
-    if(sigiyorMu(parcalar, plaka, mid)) low = mid;
-    else high = mid - 1;
-  }
-  return low;
-}
-
-function sigiyorMu(parcalar, plaka, adet) {
-  if(adet === 0) return true;
-  // Tüm parçaları adet kadar çoğalt
-  const tumParcalar = [];
-  parcalar.forEach(a => {
-    const pEn  = parseFloat(a.en)||0;
-    const pBoy = parseFloat(a.boy)||0;
-    if(pEn > 0 && pBoy > 0) {
-      for(let i = 0; i < adet; i++) {
-        tumParcalar.push({en: pEn, boy: pBoy});
-      }
-    }
-  });
-  // Büyükten küçüğe sırala
-  tumParcalar.sort((a,b) => (b.en*b.boy) - (a.en*a.boy));
-  // Greedy guillotine packing
-  const bos = [{x:0, y:0, en:plaka.en, boy:plaka.boy}];
-  for(const p of tumParcalar) {
-    let yerlestirildi = false;
-    for(let b = 0; b < bos.length; b++) {
-      const alan = bos[b];
-      // Normal veya döndürülmüş
-      const sigN = p.en <= alan.en && p.boy <= alan.boy;
-      const sigD = p.boy <= alan.en && p.en <= alan.boy;
-      if(sigN || sigD) {
-        const gEn  = sigN ? p.en  : p.boy;
-        const gBoy = sigN ? p.boy : p.en;
-        bos.splice(b, 1);
-        if(alan.en - gEn > 0)  bos.push({x:alan.x+gEn, y:alan.y,    en:alan.en-gEn, boy:gBoy});
-        if(alan.boy - gBoy > 0) bos.push({x:alan.x,    y:alan.y+gBoy, en:alan.en,    boy:alan.boy-gBoy});
-        yerlestirildi = true;
-        break;
-      }
-    }
-    if(!yerlestirildi) return false;
-  }
-  return true;
-}
-
 function plakaAnaliz(){
   plakaKaydet();
   const sonucDiv = document.getElementById('plakaAnalizSonuc');
@@ -2713,8 +2657,6 @@ function plakaAnaliz(){
       
       // Her parça için bu plakadan kaç tane çıkar?
       let adetBuPlaka = Infinity;
-      let toplamParcaAlani = 0;  // 1 ürün için gereken toplam alan
-      let tümParçalarSigiyor = true;
       const detay = [];
 
       parcalar.forEach(a => {
@@ -2724,36 +2666,22 @@ function plakaAnaliz(){
 
         // Kalınlık eşleşmeli (±1mm tolerans)
         const kalOk = Math.abs(pKal - plaka.kal) <= 0.1;
-        if(!kalOk){
-          tümParçalarSigiyor = false;
-          detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Kalınlık uyumsuz ('+pKal+'≠'+plaka.kal+')'});
-          return;
-        }
+        if(!kalOk){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Kalınlık uyumsuz ('+pKal+'≠'+plaka.kal+')'}); return; }
 
-        // Bu parça tek başına plakaya sığıyor mu?
+        // Plakadan kaç parça çıkar (2 yönlü deneme)
         const fits1 = Math.floor(plaka.en/pEn) * Math.floor(plaka.boy/pBoy);
         const fits2 = Math.floor(plaka.en/pBoy) * Math.floor(plaka.boy/pEn);
         const fits  = Math.max(fits1, fits2);
 
-        if(fits === 0){
-          tümParçalarSigiyor = false;
-          detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Plakaya sığmıyor ('+pEn+'×'+pBoy+' cm)'});
-          return;
-        }
-
-        // 1 ürün için bu parçanın alanını topla
-        toplamParcaAlani += pEn * pBoy;
-        detay.push({ad: a.aciklama||'Parça', ok:true, fits, pEn, pBoy});
+        if(fits === 0){ adetBuPlaka = 0; detay.push({ad: a.aciklama||'Parça', ok:false, neden:'Plakaya sığmıyor ('+pEn+'×'+pBoy+' cm)'}); return; }
+        
+        // Plaka adediyle çarparak kaç ürün üretilebilir
+        const urunAdedi = Math.floor((fits * plaka.adet));
+        detay.push({ad: a.aciklama||'Parça', ok:true, fits, urunAdedi, pEn, pBoy});
+        adetBuPlaka = Math.min(adetBuPlaka, urunAdedi);
       });
 
-      if(!tümParçalarSigiyor){ adetBuPlaka = 0; }
-      else if(toplamParcaAlani > 0){
-        // Gerçek guillotine packing ile hesapla
-        // Her parçayı teker teker plakaya yerleştir, kaç ürün set sığar bul
-        adetBuPlaka = hesaplaGercekAdet(parcalar, plaka);
-      } else {
-        adetBuPlaka = 0;
-      }
+      if(adetBuPlaka === Infinity) adetBuPlaka = 0;
       
       if(adetBuPlaka > enIyiAdet){
         enIyiAdet = adetBuPlaka;
@@ -3298,12 +3226,10 @@ function siparisModalAc(mevcut=null){
     +'<input type="text" id="spTelefon" placeholder="05XX XXX XX XX" autocomplete="off" value="'+(m?escH(m.telefon||''):'')+'"></div>'
     +'</div>'
 
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
     +'<div class="fg"><label>Adet</label><input type="number" id="spAdet" value="'+(m?m.adet:1)+'" min="1"></div>'
     +'<div class="fg"><label>Satış Fiyatı (₺)</label>'
     +'<input type="text" id="spFiyat" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)" value="'+(m&&m.fiyat?fmt(m.fiyat):'')+'"></div>'
-    +'<div class="fg"><label>KDV %</label>'
-    +'<input type="number" id="spKdv" placeholder="20" min="0" max="100" value="'+(m&&m.kdvOrani!==undefined?m.kdvOrani:20)+'"></div>'
     +'</div>'
 
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
@@ -3410,23 +3336,13 @@ function spUrunSecildi(){
 }
 
 function spPlatformFiyatGetir(u){
-  const platSel  = document.getElementById('spPlatform');
+  const platSel = document.getElementById('spPlatform');
   const fiyatInp = document.getElementById('spFiyat');
-  const kdvInp   = document.getElementById('spKdv');
-  if(!platSel||!u||!u.platforms) return;
+  if(!platSel||!fiyatInp||!u||!u.platforms) return;
   const secili = platSel.value;
   const eslesen = u.platforms.find(p=>p.name===secili);
-  if(eslesen){
-    if(fiyatInp && eslesen.fiyat) fiyatInp.value = fmt(eslesen.fiyat);
-    // KDV oranını platData'dan al
-    if(kdvInp){
-      const platSnap = (u.snapshot && u.snapshot.platlar || []).find(p=>p.name===secili);
-      const kdv = platSnap ? (parseFloat(platSnap.kdv)||0) : 0;
-      kdvInp.value = kdv;
-    }
-  } else {
-    if(fiyatInp) fiyatInp.value = '';
-  }
+  if(eslesen && eslesen.fiyat) fiyatInp.value = fmt(eslesen.fiyat);
+  else fiyatInp.value = '';
 }
 
 function siparisKaydet(guncelleId){
@@ -3443,38 +3359,6 @@ function siparisKaydet(guncelleId){
   const not        = document.getElementById('spNot')?.value.trim()||'';
   const kargoAdres = document.getElementById('spKargoAdres')?.value.trim()||'';
   const telefon    = document.getElementById('spTelefon')?.value.trim()||'';
-  const kdvOrani   = parseFloat(document.getElementById('spKdv')?.value)||0;
-  // Ürün platforma ait hesaplama detayları — gelir/gider köprüsü için
-  // Manuel fiyat girilmişse komisyonu yeniden hesapla
-  let platDetay = null;
-  const urunIdxForDetay = document.getElementById('spUrun')?.value;
-  const platAdiForDetay = document.getElementById('spPlatform')?.value;
-  if(urunIdxForDetay !== '' && urunIdxForDetay !== undefined && platAdiForDetay){
-    const u = savedProds[parseInt(urunIdxForDetay)];
-    if(u && u.platforms){
-      const p = u.platforms.find(x=>x.name===platAdiForDetay);
-      if(p){
-        // Komisyonu girilen fiyat üzerinden yeniden hesapla
-        const girilenfiyat = parseTutar(document.getElementById('spFiyat')?.value) || p.fiyat;
-        const komOran = p.komisyon || 0; // yüzde olarak (örn: 20)
-        // Komisyon oranını platData'dan al
-        const platSnap = (u.snapshot && u.snapshot.platlar || []).find(x=>x.name===platAdiForDetay);
-        const komYuzde = platSnap ? (parseFloat(platSnap.komisyon)||0) : komOran;
-        const yeniKom  = girilenfiyat * komYuzde / 100;
-        // Kargo aynı kalır (fiyata bağlı değil)
-        platDetay = {
-          komisyon: yeniKom,
-          komYuzde: komYuzde,
-          kargo: p.kg || 0,
-          kdvT: p.kdvT || 0,
-          gumrukT: p.gumrukT || 0,
-          ekVergiT: p.ekVergiT || 0,
-          tasiyiciTl: p.tasiyiciTl || 0,
-          orijinalFiyat: p.fiyat || 0
-        };
-      }
-    }
-  }
 
   if(!urunAd){ alert('Ürün adı giriniz!'); return; }
 
@@ -3482,11 +3366,11 @@ function siparisKaydet(guncelleId){
     // Güncelle
     const idx = siparisler.findIndex(x=>x.id===guncelleId);
     if(idx>=0){
-      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
+      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
         urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null};
     }
   } else {
-    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
+    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
       urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null});
   }
 
@@ -3502,89 +3386,11 @@ function siparisModalKapat(){
 
 function siparisDurumGuncelle(id, durum){
   const s = siparisler.find(x=>x.id===id);
-  if(!s) return;
-  const eskiDurum = s.durum;
-  s.durum = durum;
-  syncYaz('fhp_siparis', siparisler);
-  renderSiparisler();
-  // Tamamlandı işaretlenince gelir uygulamasına otomatik kayıt
-  if(durum === 'tamamlandi' && eskiDurum !== 'tamamlandi'){
-    siparisGelireGonder(s);
+  if(s){
+    s.durum = durum;
+    syncYaz('fhp_siparis', siparisler);
+    renderSiparisler();
   }
-}
-
-function siparisGelireGonder(s){
-  const tutar = s.fiyat * (s.adet||1);
-  if(tutar <= 0) return;
-  const kdv   = s.kdvOrani !== undefined ? s.kdvOrani : 20;
-  const tarih = s.tarih || new Date().toISOString().split('T')[0];
-  const adBase = s.urunAd + (s.musteriAd ? ' - ' + s.musteriAd : '') + ' (' + s.platform + ')';
-  const adet  = s.adet || 1;
-
-  const gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
-  const giderler = JSON.parse(localStorage.getItem('mt_gider') || '[]');
-
-  // ── GELİR: Satış tutarı ──
-  const kdvHesap = (t, k) => { const h=t/(1+k/100); return {dahil:t, hariç:h, kdvT:t-h}; };
-  const gH = kdvHesap(tutar, kdv);
-  gelirler.unshift({
-    id: Date.now(), ad: adBase, tarih,
-    kdvOrani: kdv, dahil: gH.dahil, hariç: gH.hariç, kdvT: gH.kdvT,
-    _siparisId: s.id
-  });
-
-  // ── GİDERLER: Komisyon, kargo, vergiler ──
-  const pd = s.platDetay;
-  let giderEklendi = 0;
-
-  // Komisyon
-  if(pd && pd.komisyon > 0){
-    const gd = kdvHesap(pd.komisyon * adet, kdv);
-    giderler.unshift({
-      id: Date.now()+1, ad: 'Komisyon — '+adBase, tarih,
-      kdvOrani: kdv, dahil: gd.dahil, hariç: gd.hariç, kdvT: gd.kdvT,
-      _siparisId: s.id
-    });
-    giderEklendi++;
-  }
-
-  // Kargo
-  if(pd && pd.kargo > 0){
-    const isManuelPlat = ['instagram','diğer','diger'].some(x=>(s.platform||'').toLowerCase().includes(x));
-    const kargoDahil = pd.kargo * adet;
-    // Manuel platformlarda KDV dahil girildi → KDV'yi içinden çıkar
-    // Normal platformlarda kargo zaten *1.2 uygulanmış → orijinal KDV'siz değer = kargo/1.2
-    const kargoKdvOrani = kdv > 0 ? kdv : 20;
-    const kargoHaric = kargoDahil / (1 + kargoKdvOrani/100);
-    const kargoKdvT  = kargoDahil - kargoHaric;
-    giderler.unshift({
-      id: Date.now()+2, ad: 'Kargo — '+adBase, tarih,
-      kdvOrani: kargoKdvOrani, dahil: kargoDahil, hariç: kargoHaric, kdvT: kargoKdvT,
-      _siparisId: s.id
-    });
-    giderEklendi++;
-  }
-
-  // Etsy vergileri
-  if(pd && (pd.gumrukT||0)+(pd.ekVergiT||0)+(pd.tasiyiciTl||0) > 0){
-    const etsy_toplam = ((pd.gumrukT||0)+(pd.ekVergiT||0)+(pd.tasiyiciTl||0))*adet;
-    giderler.unshift({
-      id: Date.now()+3, ad: 'Etsy Vergi/Bedel — '+adBase, tarih,
-      kdvOrani: 0, dahil: etsy_toplam, hariç: etsy_toplam, kdvT: 0,
-      _siparisId: s.id
-    });
-    giderEklendi++;
-  }
-
-  localStorage.setItem('mt_gelir', JSON.stringify(gelirler));
-  localStorage.setItem('mt_gider', JSON.stringify(giderler));
-  syncYaz('mt_gelir', gelirler);
-  syncYaz('mt_gider', giderler);
-
-  const mesaj = giderEklendi > 0
-    ? '✅ Gelir uygulamasına aktarıldı: 1 gelir + '+giderEklendi+' gider kaydı eklendi.'
-    : '✅ Sipariş tamamlandı! Gelir uygulamasına kaydedildi.';
-  toast(mesaj, 4000);
 }
 
 function siparisSil(id){
@@ -3718,90 +3524,6 @@ function siparisPopupKapat(){
   if(p) p.remove();
 }
 
-function toast(msg, sure=3000){
-  let t = document.getElementById('fiyat-toast');
-  if(!t){ t=document.createElement('div'); t.id='fiyat-toast';
-    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s;';
-    document.body.appendChild(t); }
-  t.textContent=msg; t.style.opacity='1';
-  clearTimeout(t._t); t._t=setTimeout(()=>{ t.style.opacity='0'; },sure);
-}
-
-// ════════════ FUSİON 360 KÖPRÜSÜ ════════════
-function fusionKontrol(){
-  const all = JSON.parse(localStorage.getItem('fhp_fusion_import_local') || 'null');
-  // syncYukle sonrasi gelen veri localStorage kontrol
-  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
-  if(!veri || !veri.parcalar || !veri.parcalar.length) return;
-
-  // Zaten gösterildi mi?
-  const sonGosterim = localStorage.getItem('fhp_fusion_gosterildi');
-  if(sonGosterim === veri.zaman) return;
-
-  // Banner göster
-  const banner = document.createElement('div');
-  banner.id = 'fusionBanner';
-  banner.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:8000;background:var(--surface);border:1px solid #6bcb77;border-radius:14px;padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:340px;';
-  banner.innerHTML = '<div style="font-weight:700;color:#6bcb77;margin-bottom:8px;">🔗 Fusion 360 Verisi Geldi!</div>'
-    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">'
-    + '<b>' + escH(veri.tasarimAd || 'Tasarım') + '</b><br>'
-    + veri.parcalar.length + ' parça hazır: '
-    + veri.parcalar.map(p=>escH(p.ad)).join(', ').substring(0,80)+'...'
-    + '</div>'
-    + '<div style="display:flex;gap:8px;">'
-    + '<button class="btn bprim" style="flex:1;font-size:12px;" onclick="fusionAktar()">✅ Forma Aktar</button>'
-    + '<button class="btn" style="font-size:12px;padding:6px 10px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);" onclick="fusionReddet()">✕</button>'
-    + '</div>';
-  document.body.appendChild(banner);
-}
-
-function fusionAktar(){
-  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
-  if(!veri || !veri.parcalar) return;
-
-  // Hesapla sekmesine geç
-  const hesaplaBtn = document.querySelector('.tb');
-  sw('hesapla', hesaplaBtn);
-  window.scrollTo({top:0, behavior:'smooth'});
-
-  // Ahşap listesini temizle
-  document.getElementById('ahsapList').innerHTML = '';
-  cnt.ah = 0;
-
-  // Her parçayı ahşap satırı olarak ekle
-  veri.parcalar.forEach(p => {
-    addAhsap();
-    const rows = document.querySelectorAll('#ahsapList .ah-row');
-    const row  = rows[rows.length - 1];
-    const inp  = row.querySelectorAll('input');
-    if(inp[0]) inp[0].value = p.ad;   // açıklama
-    if(inp[1]) inp[1].value = p.en;   // en
-    if(inp[2]) inp[2].value = p.boy;  // boy
-    if(inp[3]) inp[3].value = p.kal;  // kalınlık
-    calcAhsapRow(row.id);
-  });
-
-  // Ürün adını tasarım adından al
-  const urunAdiEl = document.getElementById('urunAdi');
-  if(urunAdiEl && !urunAdiEl.value) urunAdiEl.value = veri.tasarimAd || '';
-
-  // İşaretlenmiş olarak kaydet
-  localStorage.setItem('fhp_fusion_gosterildi', veri.zaman);
-  fusionBannerKapat();
-  toast('✅ ' + veri.parcalar.length + ' parça Hesapla formuna aktarıldı!');
-}
-
-function fusionReddet(){
-  const veri = JSON.parse(localStorage.getItem('fhp_fusion_import') || 'null');
-  if(veri) localStorage.setItem('fhp_fusion_gosterildi', veri.zaman);
-  fusionBannerKapat();
-}
-
-function fusionBannerKapat(){
-  const b = document.getElementById('fusionBanner');
-  if(b) b.remove();
-}
-
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function silUrun(idx){
@@ -3881,7 +3603,7 @@ function duzenleUrun(idx){
       snap.platlar.forEach(p => {
         const isEtsy = (p.name||'').toLowerCase().includes('etsy');
         addPlat(
-          p.emoji||'🛒', p.name, p.komisyon, (p.kdv !== undefined && p.kdv !== '' ? p.kdv : ((p.name||'').toLowerCase().includes('etsy') ? '0' : '20')), p.kargo||'0', p.netKarPlat||'500',
+          p.emoji||'🛒', p.name, p.komisyon, p.kdv||'20', p.kargo||'0', p.netKarPlat||'500',
           p.gumrukVergi !== undefined && p.gumrukVergi !== '' ? p.gumrukVergi : (isEtsy ? '3.2' : '0'),
           p.ekVergi     !== undefined && p.ekVergi     !== '' ? p.ekVergi     : (isEtsy ? '15'  : '0'),
           p.tasiyiciBedel !== undefined && p.tasiyiciBedel !== '' ? p.tasiyiciBedel : (isEtsy ? '1' : '0')
