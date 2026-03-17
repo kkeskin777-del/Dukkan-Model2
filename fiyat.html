@@ -3408,11 +3408,48 @@ function siparisModalKapat(){
 
 function siparisDurumGuncelle(id, durum){
   const s = siparisler.find(x=>x.id===id);
-  if(s){
-    s.durum = durum;
-    syncYaz('fhp_siparis', siparisler);
-    renderSiparisler();
+  if(!s) return;
+
+  const eskiDurum = s.durum;
+  s.durum = durum;
+  syncYaz('fhp_siparis', siparisler);
+  renderSiparisler();
+
+  // ── GELİR.HTML ENTEGRASYONU ──────────────────────────────────────────
+  // Sipariş tamamlandığında mt_gelir'e otomatik kayıt ekle
+  if(durum === 'tamamlandi' && eskiDurum !== 'tamamlandi'){
+    const gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
+    // Mükerrer önlemi: aynı siparişten zaten kayıt varsa tekrar ekleme
+    const zatenVar = gelirler.some(g => g.siparis_id === id);
+    if(!zatenVar){
+      const tutar   = (s.fiyat||0) * (s.adet||1);
+      const kdvOrani = 0; // KDV dahil fiyat girildiği varsayımıyla 0; istenirse değiştirilebilir
+      const kdvH    = tutar / (1 + kdvOrani/100);
+      const kdvT    = tutar - kdvH;
+      const tarih   = s.tarih || new Date().toISOString().slice(0,10);
+      const ad      = (s.musteriAd ? s.musteriAd + ' — ' : '') + s.urunAd
+                      + (s.adet>1 ? ' (x'+s.adet+')' : '')
+                      + (s.platform ? ' ['+s.platform+']' : '');
+      gelirler.unshift({
+        id         : Date.now(),
+        siparis_id : id,           // geri alma için referans
+        ad, tarih,
+        kdvOrani,
+        dahil : tutar,
+        hariç : kdvH,
+        kdvT
+      });
+      localStorage.setItem('mt_gelir', JSON.stringify(gelirler));
+    }
   }
+
+  // Durum tamamlandı'dan geri alınırsa ilgili gelir kaydını sil
+  if(eskiDurum === 'tamamlandi' && durum !== 'tamamlandi'){
+    let gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
+    gelirler = gelirler.filter(g => g.siparis_id !== id);
+    localStorage.setItem('mt_gelir', JSON.stringify(gelirler));
+  }
+  // ─────────────────────────────────────────────────────────────────────
 }
 
 function siparisSil(id){
