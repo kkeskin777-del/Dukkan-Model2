@@ -1953,9 +1953,9 @@ function hesapla(){
           <div class="rrow"><span class="rl">Komisyon (%${p.komisyon}${(!isEtsyPlat&&!isManuel&&kdvOrani>0)?' +KDV':''})</span><span style="color:var(--a1)">− ${fmt(kom)} ₺</span></div>
           ${(!isEtsyPlat&&!isManuel&&komKdvT>0)?`<div class="rrow"><span class="rl" style="padding-left:12px;font-size:11px;">Komisyon KDV dahil: ${fmt(komHaric)} + ${fmt(komKdvT)} ₺</span><span></span></div>`:``}
           ${(gumrukT>0||ekVergiT>0||tasiyiciTl>0) ? `<div class="rrow"><span class="rl" style="color:#60a5fa;font-weight:700;">🇺🇸 ABD Vergileri</span><span></span></div>` : ''}
-          ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺</span></div>` : ''}
-          ${ekVergiT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(ekVergiT)} ₺</span></div>` : ''}
-          ${tasiyiciTl>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Taşıyıcı ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(tasiyiciTl)} ₺</span></div>` : ''}
+          ${gumrukT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Gümrük (%${p.gumrukVergi})</span><span style="color:#60a5fa">− ${fmt(gumrukT)} ₺ <span style="font-size:11px;opacity:.7;">($${(gumrukT/p.etsy_kur).toFixed(2)})</span></span></div>` : ''}
+          ${ekVergiT>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Ek Vergi (%${p.ekVergi})</span><span style="color:#60a5fa">− ${fmt(ekVergiT)} ₺ <span style="font-size:11px;opacity:.7;">($${(ekVergiT/p.etsy_kur).toFixed(2)})</span></span></div>` : ''}
+          ${tasiyiciTl>0 ? `<div class="rrow"><span class="rl" style="padding-left:12px;">Taşıyıcı ($${p.tasiyiciBedel})</span><span style="color:#60a5fa">− ${fmt(tasiyiciTl)} ₺ <span style="font-size:11px;opacity:.7;">($${p.tasiyiciBedel})</span></span></div>` : ''}
           ${kdvOrani>0?`<div class="rrow"><span class="rl">KDV (%${(kdvOrani*100).toFixed(0)})</span><span>${fmt(kdvT)} ₺</span></div>`:''}
           <div class="rrow"><span class="rl" style="color:var(--a3)">💚 Net Kâr</span><span style="color:var(--a3);font-weight:700">${fmt(netK)} ₺</span></div>
           ${(()=>{
