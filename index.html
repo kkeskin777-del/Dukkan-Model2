@@ -102,6 +102,7 @@ body{
 .home-logo small{font-size:11px;font-weight:400;display:block;-webkit-text-fill-color:var(--muted);color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;margin-top:6px;}
 
 .app-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;max-width:500px;}
+.app-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;width:100%;max-width:700px;}
 
 .app-card{
   background:var(--surface);
@@ -118,6 +119,8 @@ body{
 .app-card.fiyat::before{background:linear-gradient(90deg,var(--accent1),var(--accent2));}
 .app-card.fiyat::after{background:linear-gradient(160deg,rgba(251,191,36,.06),rgba(251,191,36,.04));}
 .app-card.gelir::before{background:linear-gradient(90deg,var(--accent2),var(--accent3));}
+.app-card.arastirma::before{background:linear-gradient(90deg,#4d96ff,#a78bfa);}
+.app-card.arastirma::after{background:linear-gradient(160deg,rgba(77,150,255,.06),rgba(167,139,250,.04));}
 .app-card.gelir::after{background:linear-gradient(160deg,rgba(251,191,36,.06),rgba(202,138,4,.04));}
 .app-card:hover{transform:translateY(-6px);border-color:var(--accent1);box-shadow:0 16px 48px rgba(251,191,36,.15);}
 .app-card:hover::before{height:4px;}
@@ -165,6 +168,7 @@ body{
 
 .app-card:nth-child(1){animation:fadeUp .5s .1s ease both;}
 .app-card:nth-child(2){animation:fadeUp .5s .2s ease both;}
+.app-card:nth-child(3){animation:fadeUp .5s .3s ease both;}
 </style>
 </head>
 <body>
@@ -209,7 +213,7 @@ body{
 <!-- ANA SAYFA -->
 <div id="home-screen">
   <div class="home-logo">Keskeen Design<small>Profesyonel Takip Sistemi</small></div>
-  <div class="app-grid">
+  <div class="app-grid-3">
     <div class="app-card fiyat" onclick="openApp('fiyat.html')">
       <div class="app-icon">🏷️</div>
       <div class="app-name">Maliyet ve Satış Fiyatı Hesaplama</div>
@@ -220,6 +224,12 @@ body{
       <div class="app-icon">📊</div>
       <div class="app-name">Gelir Gider Tablosu</div>
       <div class="app-desc">Mali tablo & kazanç takibi</div>
+      <div class="app-arrow">→</div>
+    </div>
+    <div class="app-card arastirma" onclick="openApp('arastirma.html')">
+      <div class="app-icon">🔍</div>
+      <div class="app-name">Araştırma</div>
+      <div class="app-desc">Piyasa & ürün notları</div>
       <div class="app-arrow">→</div>
     </div>
   </div>
