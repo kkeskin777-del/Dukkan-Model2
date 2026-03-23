@@ -3315,21 +3315,14 @@ function siparisKaydet(guncelleId){
         const platSnap = (u.snapshot && u.snapshot.platlar||[]).find(x=>x.name===platform);
         const komYuzde = platSnap ? (parseFloat(platSnap.komisyon)||0) : 0;
         const platKdv = platSnap ? (parseFloat(platSnap.kdv)||0) : (kdvOrani||0);
-        // Kargo: önce hesaplanmış kg, sonra snapshot'taki ham kargo
-        const kargoHam = p.kg || (platSnap ? parseTutar(platSnap.kargo) : 0);
-        // Kargo KDV eklenmiş mi? getPlatforms'da Instagram/Diğer hariç *1.20 yapılıyor
-        const isManuelP2 = ['instagram','diğer','diger'].some(x=>(platform||'').toLowerCase().includes(x));
-        const isEtsyP2   = (platform||'').toLowerCase().includes('etsy');
-        // KDV dahil kargo tutarını hesapla
-        const kargoDahilDetay = (kargoHam > 0 && !isManuelP2 && !isEtsyP2 && platKdv > 0)
-          ? kargoHam  // zaten *1.20 uygulanmış
-          : kargoHam;
+        // Ham kargo: snapshot'taki değer (kullanıcının girdiği, KDV'siz)
+        const kargoHam = platSnap ? (parseFloat(platSnap.kargo)||0) : (p.kg||0);
         platDetay = {
           komisyon:   girilenFiyat * komYuzde / 100,
           komYuzde:   komYuzde,
           kdvOrani:   platKdv,
-          kargo:      kargoDahilDetay,
-          kargoHam:   platSnap ? parseTutar(platSnap.kargo) : 0,
+          kargoHam:   kargoHam,   // kullanıcının girdiği ham kargo
+          kargo:      kargoHam,
           gumrukT:    p.gumrukT || 0,
           ekVergiT:   p.ekVergiT || 0,
           tasiyiciTl: p.tasiyiciTl || 0
