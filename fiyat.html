@@ -905,7 +905,10 @@ let hammaddeler = (()=>{
   hm.forEach(h=>{
     const en=parseFloat(h.en)||0, boy=parseFloat(h.boy)||0;
     const kal=parseFloat(h.kal)||0, fiy=parseFloat(h.fiyat)||0;
-    if(en>0&&boy>0&&kal>0&&fiy>0) h.cm3f = fiy/(en*boy*kal);
+    if(en>0 && boy>0 && fiy>0){
+      // kal varsa eski format (cm3), yoksa yeni format (cm2)
+      h.cm3f = kal>0 ? fiy/(en*boy*kal) : fiy/(en*boy);
+    }
   });
   return hm;
 })();
@@ -1353,8 +1356,9 @@ function checkPendingUpdates(){
       if(a.hmIdx !== '' && a.hmIdx !== undefined){
         const hm = hammaddeler[parseInt(a.hmIdx)];
         if(hm && hm.cm3f > 0){
-          const guncelCm3f = hm.cm3f.toFixed(6);
-          if(a.cm3f !== guncelCm3f) hasPending = true;
+          const guncelF = hm.cm3f.toFixed(6);
+          const mevcutF = a.cm2f || a.cm3f || '';
+          if(String(mevcutF) !== guncelF) hasPending = true;
         }
       }
     });
@@ -1407,8 +1411,13 @@ function recalcSavedProds(){
       if(a.hmIdx !== '' && a.hmIdx !== undefined){
         const hm = hammaddeler[parseInt(a.hmIdx)];
         if(hm && hm.cm3f > 0){
-          const yeniCm3f = hm.cm3f.toFixed(6);
-          if(a.cm3f !== yeniCm3f){ a.cm3f = yeniCm3f; snapChanged = true; }
+          const yeniF = hm.cm3f.toFixed(6);
+          const mevcutF = a.cm2f || a.cm3f || '';
+          if(String(mevcutF) !== yeniF){
+            a.cm2f = yeniF;
+            a.cm3f = yeniF;
+            snapChanged = true;
+          }
         }
       }
     });
@@ -1435,7 +1444,11 @@ function recalcSavedProds(){
       const kdvOrani = (parseFloat(p.kdv)||0)/100;
       const isEtsyP = (p.name||'').toLowerCase().includes('etsy');
       const kargoRaw = parseTutar(p.kargo);
-      const kg = isEtsyP ? kargoRaw * (parseFloat(snap.etsy_kur)||38.5) : kargoRaw;
+      const isManuelRecalc = ['instagram','diğer','diger'].some(x=>(p.name||'').toLowerCase().includes(x));
+      // Etsy: kargo USD → TL çevir. Diğer platformlar: KDV hariç girildi → *1.20
+      const kg = isEtsyP
+        ? kargoRaw * (parseFloat(snap.etsy_kur)||38.5)
+        : (!isManuelRecalc && kdvOrani>0 ? kargoRaw * (1 + kdvOrani) : kargoRaw);
       const netKar = parseTutar(p.netKarPlat)||500;
       const gumrukR = (p.gumrukVergi||0)/100;
       const ekVergiR = (p.ekVergi||0)/100;
@@ -1455,7 +1468,7 @@ function recalcSavedProds(){
       const ekVergiT = sf*ekVergiR;
       const netK  = sf-kom-kg-tasiyiciTl-hamMal-kdvT-gumrukT-ekVergiT;
       return {name:p.name, fiyat:sf, net:netK, netKarPlat:netKar,
-              gumrukT, ekVergiT, tasiyiciTl,
+              kg, kom, kdvT, gumrukT, ekVergiT, tasiyiciTl,
               gumrukVergi:p.gumrukVergi||0, ekVergi:p.ekVergi||0, tasiyiciBedel:p.tasiyiciBedel||0};
     });
   });
