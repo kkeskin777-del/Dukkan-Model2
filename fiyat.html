@@ -3314,9 +3314,11 @@ function siparisKaydet(guncelleId){
         const girilenFiyat = parseTutar(document.getElementById('spFiyat')?.value) || p.fiyat;
         const platSnap = (u.snapshot && u.snapshot.platlar||[]).find(x=>x.name===platform);
         const komYuzde = platSnap ? (parseFloat(platSnap.komisyon)||0) : 0;
+        const platKdv = platSnap ? (parseFloat(platSnap.kdv)||0) : (kdvOrani||0);
         platDetay = {
           komisyon:   girilenFiyat * komYuzde / 100,
           komYuzde:   komYuzde,
+          kdvOrani:   platKdv,
           kargo:      p.kg || 0,
           gumrukT:    p.gumrukT || 0,
           ekVergiT:   p.ekVergiT || 0,
@@ -3364,7 +3366,10 @@ function siparisDurumGuncelle(id, durum){
 function siparisGelireGonder(s){
   const tutar = s.fiyat * (s.adet||1);
   if(tutar <= 0) return;
-  const kdv   = s.kdvOrani !== undefined ? s.kdvOrani : 20;
+  // KDV oranını önce platDetay'dan, sonra sipariş kdvOrani'dan, son olarak 20'den al
+  const kdv = (s.platDetay && s.platDetay.kdvOrani !== undefined)
+    ? s.platDetay.kdvOrani
+    : (s.kdvOrani !== undefined ? s.kdvOrani : 20);
   const tarih = s.tarih || new Date().toISOString().split('T')[0];
   const adBase = s.urunAd + (s.musteriAd ? ' - ' + s.musteriAd : '') + ' (' + s.platform + ')';
   const adet  = s.adet || 1;
@@ -3384,10 +3389,17 @@ function siparisGelireGonder(s){
   let giderEklendi = 0;
 
   if(pd && pd.komisyon > 0){
-    const gd = kdvHesap(pd.komisyon * adet, kdv);
+    // Komisyon zaten KDV dahil hesaplandı (komHaric * (1+kdv))
+    // Gelir uygulamasına KDV dahil tutar gönder, içinden KDV'yi ayır
+    const komDahil = pd.komisyon * adet;
+    const isManuelPlatform = ['instagram','diğer','diger'].some(x=>(s.platform||'').toLowerCase().includes(x));
+    const isEtsyPlatform   = (s.platform||'').toLowerCase().includes('etsy');
+    const komKdvOrani      = (!isEtsyPlatform && !isManuelPlatform && kdv>0) ? kdv : 0;
+    const komHaric = komKdvOrani>0 ? komDahil/(1+komKdvOrani/100) : komDahil;
+    const komKdvT  = komDahil - komHaric;
     giderler.unshift({
       id: Date.now()+1, ad: 'Komisyon — '+adBase, tarih,
-      kdvOrani: kdv, dahil: gd.dahil, hariç: gd.hariç, kdvT: gd.kdvT,
+      kdvOrani: komKdvOrani, dahil: komDahil, hariç: komHaric, kdvT: komKdvT,
       _siparisId: s.id
     });
     giderEklendi++;
