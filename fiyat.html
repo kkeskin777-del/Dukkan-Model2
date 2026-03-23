@@ -3315,11 +3315,21 @@ function siparisKaydet(guncelleId){
         const platSnap = (u.snapshot && u.snapshot.platlar||[]).find(x=>x.name===platform);
         const komYuzde = platSnap ? (parseFloat(platSnap.komisyon)||0) : 0;
         const platKdv = platSnap ? (parseFloat(platSnap.kdv)||0) : (kdvOrani||0);
+        // Kargo: önce hesaplanmış kg, sonra snapshot'taki ham kargo
+        const kargoHam = p.kg || (platSnap ? parseTutar(platSnap.kargo) : 0);
+        // Kargo KDV eklenmiş mi? getPlatforms'da Instagram/Diğer hariç *1.20 yapılıyor
+        const isManuelP2 = ['instagram','diğer','diger'].some(x=>(platform||'').toLowerCase().includes(x));
+        const isEtsyP2   = (platform||'').toLowerCase().includes('etsy');
+        // KDV dahil kargo tutarını hesapla
+        const kargoDahilDetay = (kargoHam > 0 && !isManuelP2 && !isEtsyP2 && platKdv > 0)
+          ? kargoHam  // zaten *1.20 uygulanmış
+          : kargoHam;
         platDetay = {
           komisyon:   girilenFiyat * komYuzde / 100,
           komYuzde:   komYuzde,
           kdvOrani:   platKdv,
-          kargo:      p.kg || p.kargo || 0,
+          kargo:      kargoDahilDetay,
+          kargoHam:   platSnap ? parseTutar(platSnap.kargo) : 0,
           gumrukT:    p.gumrukT || 0,
           ekVergiT:   p.ekVergiT || 0,
           tasiyiciTl: p.tasiyiciTl || 0
@@ -3405,10 +3415,26 @@ function siparisGelireGonder(s){
     giderEklendi++;
   }
 
-  if(pd && pd.kargo > 0){
-    const kargoKdvOrani = kdv > 0 ? kdv : 20;
-    const kargoDahil = pd.kargo * adet;
-    const kargoHaric = kargoDahil / (1 + kargoKdvOrani/100);
+  // Kargo gideri — ham kargo tutarını kullan
+  const kargoTutar = (pd && pd.kargoHam > 0) ? pd.kargoHam : (pd && pd.kargo > 0 ? pd.kargo : 0);
+  if(kargoTutar > 0){
+    const isManuelPlat2 = ['instagram','diğer','diger'].some(x=>(s.platform||'').toLowerCase().includes(x));
+    const isEtsyPlat2   = (s.platform||'').toLowerCase().includes('etsy');
+    // Manuel ve Etsy'de kargo KDV dahil girilmiş, diğerlerinde KDV hariç
+    let kargoDahil, kargoKdvOrani;
+    if(isManuelPlat2){
+      // KDV dahil girildi → içinden KDV'yi çıkar
+      kargoKdvOrani = kdv > 0 ? kdv : 20;
+      kargoDahil    = kargoTutar * adet;
+    } else if(isEtsyPlat2){
+      kargoKdvOrani = 0;
+      kargoDahil    = kargoTutar * adet;
+    } else {
+      // KDV hariç girildi → KDV ekle
+      kargoKdvOrani = kdv > 0 ? kdv : 20;
+      kargoDahil    = kargoTutar * adet * (1 + kargoKdvOrani/100);
+    }
+    const kargoHaric = kargoKdvOrani > 0 ? kargoDahil / (1 + kargoKdvOrani/100) : kargoDahil;
     const kargoKdvT  = kargoDahil - kargoHaric;
     giderler.unshift({
       id: Date.now()+2, ad: 'Kargo — '+adBase, tarih,
