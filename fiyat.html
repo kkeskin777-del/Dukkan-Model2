@@ -65,16 +65,16 @@
   .wbar .wv{font-family:'Libre Baskerville',serif;font-weight:800;font-size:17px;color:var(--wv);}
 
   /* Ahşap satır: hammadde-seçici | açıklama | en | boy | kal | cm³fiyat | maliyet | sil */
-  .ah-hdr{display:grid;grid-template-columns:160px 1fr 65px 65px 65px 110px 90px 34px;gap:6px;margin-bottom:5px;align-items:end;}
+  .ah-hdr{display:grid;grid-template-columns:160px 1fr 75px 75px 120px 100px 34px;gap:6px;margin-bottom:5px;align-items:end;}
   .ah-hdr label{margin-bottom:0;font-size:10px;}
-  .ah-row{display:grid;grid-template-columns:160px 1fr 65px 65px 65px 110px 90px 34px;gap:6px;margin-bottom:7px;align-items:center;}
+  .ah-row{display:grid;grid-template-columns:160px 1fr 75px 75px 120px 100px 34px;gap:6px;margin-bottom:7px;align-items:center;}
   .ah-row input,.ah-row select{margin-bottom:0;font-size:13px;}
   .ah-maliyet{background:rgba(107,203,119,.1);border:1px solid rgba(107,203,119,.25);border-radius:8px;padding:8px 9px;font-family:'Libre Baskerville',serif;font-size:12px;font-weight:700;color:var(--a3);text-align:center;white-space:nowrap;}
 
   /* HAMMADDE sekmesi */
-  .hm-hdr{display:grid;grid-template-columns:2fr 85px 85px 85px 115px 105px 34px;gap:6px;margin-bottom:5px;align-items:end;}
+  .hm-hdr{display:grid;grid-template-columns:2fr 85px 85px 115px 105px 34px;gap:6px;margin-bottom:5px;align-items:end;}
   .hm-hdr label{margin-bottom:0;font-size:10px;}
-  .hm-row{display:grid;grid-template-columns:2fr 85px 85px 85px 115px 105px 34px;gap:6px;margin-bottom:7px;align-items:center;cursor:default;}
+  .hm-row{display:grid;grid-template-columns:2fr 85px 85px 115px 105px 34px;gap:6px;margin-bottom:7px;align-items:center;cursor:default;}
   .hm-row input{margin-bottom:0;}
   .hm-badge{background:rgba(180,120,60,.12);border:1px solid var(--wbr);border-radius:8px;padding:8px 9px;font-family:'Libre Baskerville',serif;font-size:12px;font-weight:700;color:var(--wv);text-align:center;white-space:nowrap;}
 
@@ -503,7 +503,6 @@
       <button class="tb"        onclick="sw('hammadde',this)">🪵 Hammadde</button>
       <button class="tb"        onclick="sw('sabit',this)">⚙️ Genel Giderler</button>
       <button class="tb tb-urunler" onclick="sw('urunler',this)">📦 Ürünlerim</button>
-      <button class="tb" onclick="sw('plaka',this)">🪵 Plaka Stok</button>
       <button class="tb" onclick="sw('siparis',this)">📋 Siparişler</button>
     </div>
   </div>
@@ -554,8 +553,7 @@
         <label>Açıklama</label>
         <label>En (cm)</label>
         <label>Boy (cm)</label>
-        <label>Kal. (cm)</label>
-        <label>cm³ Fiyatı (₺)</label>
+        <label>cm² Fiyatı (₺)</label>
         <label>Maliyet</label>
         <span></span>
       </div>
@@ -674,9 +672,8 @@
       <label>Hammadde Adı / Cinsi</label>
       <label>En (cm)</label>
       <label>Boy (cm)</label>
-      <label>Kalınlık (cm)</label>
       <label>Alış Fiyatı (₺)</label>
-      <label>cm³ Fiyatı</label>
+      <label>cm² Fiyatı</label>
       <span></span>
     </div>
     <div id="hmList"></div>
@@ -762,69 +759,6 @@
     <div id="siparisList"></div>
   </div>
 </div>
-
-<div id="tab-plaka" class="tab">
-  <div class="card">
-    <div class="ctitle"><div class="ico iw">🪵</div>Plaka Stoğu
-      <button class="btn badd" style="margin-left:auto;padding:5px 12px;font-size:12px;" onclick="plakaEkle()">➕ Plaka Ekle</button>
-    </div>
-    <div class="plaka-hdr" id="plakaHdr" style="display:grid;grid-template-columns:2fr 80px 80px 70px 80px 34px;gap:6px;padding:0 4px;margin-bottom:4px;">
-      <label>Hammadde Seç</label>
-      <label>En (cm)</label>
-      <label>Boy (cm)</label>
-      <label>Kal (cm)</label>
-      <label>Adet</label>
-      <span></span>
-    </div>
-    <div id="plakaList"></div>
-    <div style="margin-top:12px;">
-      <button class="btn bprim" style="width:100%;" onclick="plakaAnaliz()">🔍 Hangi Ürünleri Üretebilirim?</button>
-    </div>
-  </div>
-  <div class="card" id="plakaAnalizSonuc" style="display:none;margin-top:14px;">
-    <div class="ctitle"><div class="ico ip">📊</div>Stok Analiz Sonuçları
-      <div style="margin-left:auto;display:flex;gap:6px;">
-        <button class="btn" onclick="analizKaydet('stok')" style="padding:4px 10px;font-size:12px;background:rgba(107,203,119,.1);color:#6bcb77;border:1px solid rgba(107,203,119,.3);">💾 Kaydet</button>
-        <button class="btn" onclick="document.getElementById('plakaAnalizSonuc').style.display='none'" style="padding:4px 10px;font-size:12px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);">✕ Kapat</button>
-      </div>
-    </div>
-    <div id="plakaAnalizIc"></div>
-  </div>
-  <div class="card" id="stokAnalizKayitlarKart" style="display:none;margin-top:14px;">
-    <div class="ctitle"><div class="ico ip">📋</div>Kayıtlı Stok Analizleri</div>
-    <div id="stokAnalizKayitlarIc"></div>
-  </div>
-  <div class="card" style="margin-top:14px;">
-    <div class="ctitle"><div class="ico iw">✂️</div>Plaka Optimizasyonu
-      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Plakadan en verimli kesimi bulur</span>
-    </div>
-    <div style="display:grid;grid-template-columns:2fr 80px 80px 70px;gap:8px;align-items:end;margin-bottom:10px;">
-      <div class="fg"><label>Hammadde Seç</label>
-        <select id="optHammadde" onchange="optHammaddeSecildi()" style="width:100%;">
-          <option value="">— Manuel gir —</option>
-        </select>
-      </div>
-      <div class="fg"><label>En (cm)</label><input type="text" id="optEn" placeholder="70" autocomplete="off"></div>
-      <div class="fg"><label>Boy (cm)</label><input type="text" id="optBoy" placeholder="50" autocomplete="off"></div>
-      <div class="fg"><label>Kal (cm)</label><input type="text" id="optKal" placeholder="1.8" autocomplete="off" id="optKalInp"></div>
-    </div>
-    <button class="btn bprim" style="width:100%;" onclick="plakaOptimizasyon()">🔍 Optimize Et</button>
-  </div>
-  <div class="card" id="optSonucKart" style="display:none;margin-top:14px;">
-    <div class="ctitle"><div class="ico ip">✂️</div>Optimizasyon Sonuçları
-      <div style="margin-left:auto;display:flex;gap:6px;">
-        <button class="btn" onclick="analizKaydet('opt')" style="padding:4px 10px;font-size:12px;background:rgba(107,203,119,.1);color:#6bcb77;border:1px solid rgba(107,203,119,.3);">💾 Kaydet</button>
-        <button class="btn" onclick="document.getElementById('optSonucKart').style.display='none'" style="padding:4px 10px;font-size:12px;background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);">✕ Kapat</button>
-      </div>
-    </div>
-    <div id="optIc"></div>
-  </div>
-  <div class="card" id="optAnalizKayitlarKart" style="display:none;margin-top:14px;">
-    <div class="ctitle"><div class="ico ip">📋</div>Kayıtlı Optimizasyon Analizleri</div>
-    <div id="optAnalizKayitlarIc"></div>
-  </div>
-</div>
-
 
 </div>
 
@@ -1225,7 +1159,6 @@ function sw(tab, btn){
   }
   if(tab==='sabit')     { renderSabit(); calcSabitPay(); verimYukle(); }
   if(tab==='hammadde')  renderHammadde();
-  if(tab==='plaka')     { renderPlaka(); renderAnalizKayitlar('stok'); renderAnalizKayitlar('opt'); }
   if(tab==='siparis')   renderSiparisler();
 }
 
@@ -1361,7 +1294,7 @@ function getPlatforms(){
 }
 
 // ════════════ HAMMADDE ════════════
-function addHammadde(ad='', en='', boy='', kal='', fiyat=''){
+function addHammadde(ad='', en='', boy='', fiyat=''){
   cnt.hm++;
   const id = 'hm_'+cnt.hm;
   const div = document.createElement('div');
@@ -1370,13 +1303,12 @@ function addHammadde(ad='', en='', boy='', kal='', fiyat=''){
     <input type="text" placeholder="Örn: Meşe 1.8cm, Kayın 2cm..." value="${ad}" oninput="saveHammadde()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <input type="number" placeholder="121" min="0" step="0.1" value="${en}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="350" min="0" step="0.1" value="${boy}" oninput="updateHmRow('${id}')">
-    <input type="number" placeholder="1.8" min="0" step="0.01" value="${kal}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="5000" min="0" step="1" value="${fiyat}" oninput="updateHmRow('${id}')">
     <div class="hm-badge" id="badge_${id}">—</div>
     <button class="bico" onclick="removeRow('${id}'); saveHammadde(); refreshAhsapSelectors()">×</button>
   `;
   document.getElementById('hmList').appendChild(div);
-  if(en && boy && kal && fiyat) updateHmRow(id);
+  if(en && boy && fiyat) updateHmRow(id);
   renderHmCount();
 }
 
@@ -1384,11 +1316,11 @@ function updateHmRow(id){
   const row = document.getElementById(id); if(!row) return;
   const inp = row.querySelectorAll('input');
   const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
-  const kal=parseFloat(inp[3].value)||0, fiy=parseFloat(inp[4].value)||0;
+  const fiy=parseFloat(inp[3].value)||0;
   const badge = document.getElementById('badge_'+id);
-  if(en>0 && boy>0 && kal>0 && fiy>0){
-    const cm3f = fiy/(en*boy*kal);
-    badge.textContent = fmt6(cm3f)+' ₺/cm³';
+  if(en>0 && boy>0 && fiy>0){
+    const cm3f = fiy/(en*boy);
+    badge.textContent = fmt6(cm3f)+' ₺/cm²';
     badge.style.cssText='background:rgba(107,203,119,.1);border-color:rgba(107,203,119,.3);color:var(--a3);';
   } else {
     badge.textContent='—';
@@ -1404,9 +1336,9 @@ function saveHammadde(){
   document.querySelectorAll('#hmList .hm-row').forEach(row=>{
     const inp = row.querySelectorAll('input');
     const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
-    const kal=parseFloat(inp[3].value)||0, fiy=parseTutar(inp[4].value);
-    const cm3f = (en>0&&boy>0&&kal>0&&fiy>0) ? fiy/(en*boy*kal) : 0;
-    hammaddeler.push({ad:inp[0].value, en:inp[1].value, boy:inp[2].value, kal:inp[3].value, fiyat:fiy, cm3f});
+    const fiy=parseTutar(inp[3].value);
+    const cm3f = (en>0&&boy>0&&fiy>0) ? fiy/(en*boy) : 0;
+    hammaddeler.push({ad:inp[0].value, en:inp[1].value, boy:inp[2].value, fiyat:fiy, cm3f});
   });
   syncYaz('fhp_hammadde', hammaddeler);
   checkPendingUpdates();
@@ -1486,8 +1418,8 @@ function recalcSavedProds(){
     let ahsapMal = 0;
     snap.ahsaplar.forEach(a=>{
       const en=parseFloat(a.en)||0, boy=parseFloat(a.boy)||0;
-      const kal=parseFloat(a.kal)||0, cm3f=parseFloat(a.cm3f)||0;
-      ahsapMal += en*boy*kal*cm3f;
+      const cm2f=parseFloat(a.cm2f||a.cm3f)||0;
+      ahsapMal += en*boy*cm2f;
     });
     let disMal = 0;
     (snap.disler||[]).forEach(d=>{ disMal += parseTutar(d.fiyat); });
@@ -1540,7 +1472,7 @@ function recalcSavedProds(){
 
 function renderHammadde(){
   document.getElementById('hmList').innerHTML=''; cnt.hm=0;
-  hammaddeler.forEach(h=>addHammadde(h.ad, h.en, h.boy, h.kal, h.fiyat));
+  hammaddeler.forEach(h=>addHammadde(h.ad, h.en, h.boy, h.fiyat));
   if(hammaddeler.length===0) addHammadde();
   renderHmCount();
 }
@@ -1570,7 +1502,7 @@ function buildHmOptions(){
   let html = '<option value="">— Manuel gir —</option>';
   hammaddeler.forEach((h,i)=>{
     if(h.ad && h.cm3f>0){
-      html += `<option value="${i}">${h.ad} (${fmt6(h.cm3f)} ₺/cm³)</option>`;
+      html += `<option value="${i}">${h.ad} (${fmt6(h.cm3f)} ₺/cm²)</option>`;
     }
   });
   return html;
@@ -1589,8 +1521,7 @@ function addAhsap(){
     <input type="text" placeholder="tabla, kenar...">
     <input type="text" placeholder="50 cm veya 9in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
     <input type="text" placeholder="50 cm veya 12in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
-    <input type="number" placeholder="1.8" min="0" step="0.01" oninput="calcAhsapRow('${id}')">
-    <input type="number" placeholder="cm³ fiyatı" min="0" step="0.000001" oninput="calcAhsapRow('${id}')">
+    <input type="number" placeholder="cm² fiyatı" min="0" step="0.000001" oninput="calcAhsapRow('${id}')">
     <div class="ah-maliyet" id="ahmal_${id}">₺ 0,00</div>
     <button class="bico" onclick="removeRow('${id}'); calcAhsap()">×</button>
   `;
@@ -1601,26 +1532,17 @@ function ahsapHammaddeSecildi(id){
   const row = document.getElementById(id); if(!row) return;
   const sel = row.querySelector('select');
   const inp = row.querySelectorAll('input');
-  const kalinlikInp = inp[3]; // 4. input = kalınlık
-  const cm3inp      = inp[4]; // 5. input = cm³ fiyatı
+  const cm2inp = inp[3]; // 4. input = cm² fiyatı
   if(sel.value === ''){
-    cm3inp.value = '';
-    cm3inp.style.borderColor = '';
-    cm3inp.placeholder = 'cm³ fiyatı';
-    kalinlikInp.style.borderColor = '';
+    cm2inp.value = '';
+    cm2inp.style.borderColor = '';
+    cm2inp.placeholder = 'cm² fiyatı';
   } else {
     const h = hammaddeler[parseInt(sel.value)];
-    if(h){
-      if(h.kal && parseFloat(h.kal) > 0){
-        kalinlikInp.value = parseFloat(h.kal);
-        kalinlikInp.style.borderColor = 'rgba(251,191,36,.5)';
-        kalinlikInp.title = 'Hammaddeden otomatik alındı';
-      }
-      if(h.cm3f > 0){
-        cm3inp.value = h.cm3f.toFixed(6);
-        cm3inp.style.borderColor = 'rgba(107,203,119,.5)';
-        cm3inp.placeholder = '';
-      }
+    if(h && h.cm3f > 0){
+      cm2inp.value = h.cm3f.toFixed(6);
+      cm2inp.style.borderColor = 'rgba(107,203,119,.5)';
+      cm2inp.placeholder = '';
     }
   }
   calcAhsapRow(id);
@@ -1629,10 +1551,10 @@ function ahsapHammaddeSecildi(id){
 function calcAhsapRow(id){
   const row = document.getElementById(id); if(!row) return;
   const inp = row.querySelectorAll('input');
-  // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=kal, inp[4]=cm3f
+  // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=cm2f
   const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
-  const kal=parseFloat(inp[3].value)||0, cm3f=parseFloat(inp[4].value)||0;
-  const mal = en*boy*kal*cm3f;
+  const cm2f=parseFloat(inp[3].value)||0;
+  const mal = en*boy*cm2f;
   const badge = document.getElementById('ahmal_'+id);
   if(badge) badge.textContent = '₺ '+fmt(mal);
   calcAhsap();
@@ -1643,8 +1565,8 @@ function calcAhsap(){
   document.querySelectorAll('#ahsapList .ah-row').forEach(row=>{
     const inp = row.querySelectorAll('input');
     const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
-    const kal=parseFloat(inp[3].value)||0, cm3f=parseFloat(inp[4].value)||0;
-    total += en*boy*kal*cm3f;
+    const cm2f=parseFloat(inp[3].value)||0;
+    total += en*boy*cm2f;
   });
   document.getElementById('ahsapTotal').textContent = '₺ '+fmt(total);
   // Ürün başına ahşap maliyeti
@@ -1831,7 +1753,7 @@ function karsılastir(){
 
   // Her hammadde için hesapla
   const sonuclar = gecerliHm.map(hm=>{
-    const ahsapMal = satirOlculeri.reduce((t,s)=>t + s.en*s.boy*s.kal*hm.cm3f, 0);
+    const ahsapMal = satirOlculeri.reduce((t,s)=>t + s.en*s.boy*hm.cm3f, 0);
     const hamMal   = ahsapMal + disMal + iscilik + sabitPay;
     const platSon  = platformlar.filter(p=>p.komisyon/100 < 1).map(p=>{
       const koR=p.komisyon/100, kg=p.kargo||0, kdvOrani=p.kdvOrani||0;
@@ -2198,8 +2120,7 @@ function snapshotForm(){
       aciklama: inp[0]?.value||'',
       en:  String(inchParse(inp[1]?.value)||''),
       boy: String(inchParse(inp[2]?.value)||''),
-      kal: inp[3]?.value||'',
-      cm3f:inp[4]?.value||''
+      cm2f:inp[3]?.value||''
     });
   });
   // Dış ürünler
@@ -3408,11 +3329,80 @@ function siparisModalKapat(){
 
 function siparisDurumGuncelle(id, durum){
   const s = siparisler.find(x=>x.id===id);
-  if(s){
-    s.durum = durum;
-    syncYaz('fhp_siparis', siparisler);
-    renderSiparisler();
+  if(!s) return;
+  const eskiDurum = s.durum;
+  s.durum = durum;
+  syncYaz('fhp_siparis', siparisler);
+  renderSiparisler();
+  if(durum === 'tamamlandi' && eskiDurum !== 'tamamlandi'){
+    siparisGelireGonder(s);
   }
+}
+
+function siparisGelireGonder(s){
+  const tutar = s.fiyat * (s.adet||1);
+  if(tutar <= 0) return;
+  const kdv   = s.kdvOrani !== undefined ? s.kdvOrani : 20;
+  const tarih = s.tarih || new Date().toISOString().split('T')[0];
+  const adBase = s.urunAd + (s.musteriAd ? ' - ' + s.musteriAd : '') + ' (' + s.platform + ')';
+  const adet  = s.adet || 1;
+
+  const gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
+  const giderler = JSON.parse(localStorage.getItem('mt_gider') || '[]');
+
+  const kdvHesap = (t, k) => { const h=t/(1+k/100); return {dahil:t, hariç:h, kdvT:t-h}; };
+  const gH = kdvHesap(tutar, kdv);
+  gelirler.unshift({
+    id: Date.now(), ad: adBase, tarih,
+    kdvOrani: kdv, dahil: gH.dahil, hariç: gH.hariç, kdvT: gH.kdvT,
+    _siparisId: s.id
+  });
+
+  const pd = s.platDetay;
+  let giderEklendi = 0;
+
+  if(pd && pd.komisyon > 0){
+    const gd = kdvHesap(pd.komisyon * adet, kdv);
+    giderler.unshift({
+      id: Date.now()+1, ad: 'Komisyon — '+adBase, tarih,
+      kdvOrani: kdv, dahil: gd.dahil, hariç: gd.hariç, kdvT: gd.kdvT,
+      _siparisId: s.id
+    });
+    giderEklendi++;
+  }
+
+  if(pd && pd.kargo > 0){
+    const kargoKdvOrani = kdv > 0 ? kdv : 20;
+    const kargoDahil = pd.kargo * adet;
+    const kargoHaric = kargoDahil / (1 + kargoKdvOrani/100);
+    const kargoKdvT  = kargoDahil - kargoHaric;
+    giderler.unshift({
+      id: Date.now()+2, ad: 'Kargo — '+adBase, tarih,
+      kdvOrani: kargoKdvOrani, dahil: kargoDahil, hariç: kargoHaric, kdvT: kargoKdvT,
+      _siparisId: s.id
+    });
+    giderEklendi++;
+  }
+
+  if(pd && (pd.gumrukT||0)+(pd.ekVergiT||0)+(pd.tasiyiciTl||0) > 0){
+    const etsy_toplam = ((pd.gumrukT||0)+(pd.ekVergiT||0)+(pd.tasiyiciTl||0))*adet;
+    giderler.unshift({
+      id: Date.now()+3, ad: 'Etsy Vergi/Bedel — '+adBase, tarih,
+      kdvOrani: 0, dahil: etsy_toplam, hariç: etsy_toplam, kdvT: 0,
+      _siparisId: s.id
+    });
+    giderEklendi++;
+  }
+
+  localStorage.setItem('mt_gelir', JSON.stringify(gelirler));
+  localStorage.setItem('mt_gider', JSON.stringify(giderler));
+  syncYaz('mt_gelir', gelirler);
+  syncYaz('mt_gider', giderler);
+
+  const mesaj = giderEklendi > 0
+    ? '✅ Gelir uygulamasına aktarıldı: 1 gelir + '+giderEklendi+' gider kaydı eklendi.'
+    : '✅ Sipariş tamamlandı! Gelir uygulamasına kaydedildi.';
+  toast(mesaj, 4000);
 }
 
 function siparisSil(id){
@@ -3590,7 +3580,7 @@ function duzenleUrun(idx){
       if(inp[1]) inp[1].value = a.en||'';
       if(inp[2]) inp[2].value = a.boy||'';
       if(inp[3]) inp[3].value = a.kal||'';
-      if(inp[4] && a.cm3f) { inp[4].value = a.cm3f; }
+      if(inp[3] && (a.cm2f||a.cm3f)) { inp[3].value = a.cm2f||a.cm3f; }
       calcAhsapRow(row.id);
     });
 
