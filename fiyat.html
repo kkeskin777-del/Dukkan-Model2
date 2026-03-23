@@ -2162,7 +2162,7 @@ function buildUrunObj(){
     kategori: document.getElementById('urunKategori')?.value || '',
     maliyet: lastResult.hamMal,
     kdv: lastResult.results.map(r=>(r.platform.kdvOrani*100).toFixed(0)+'%').join('/') || '—',
-    platforms: lastResult.results.map(r=>({name:r.platform.name, fiyat:r.satisFiyati, net:r.netK, netKarPlat:r.platform.netKarPlat||0})),
+    platforms: lastResult.results.map(r=>({name:r.platform.name, fiyat:r.satisFiyati, net:r.netK, netKarPlat:r.platform.netKarPlat||0, kg:r.kg||0, kom:r.kom||0, kdvT:r.kdvT||0, gumrukT:r.gumrukT||0, ekVergiT:r.ekVergiT||0, tasiyiciTl:r.tasiyiciTl||0})),
     tarih: new Date().toLocaleDateString('tr-TR'),
     foto: currentFotoB64 || null,
     snapshot: snapshotForm()
@@ -3319,7 +3319,7 @@ function siparisKaydet(guncelleId){
           komisyon:   girilenFiyat * komYuzde / 100,
           komYuzde:   komYuzde,
           kdvOrani:   platKdv,
-          kargo:      p.kg || 0,
+          kargo:      p.kg || p.kargo || 0,
           gumrukT:    p.gumrukT || 0,
           ekVergiT:   p.ekVergiT || 0,
           tasiyiciTl: p.tasiyiciTl || 0
