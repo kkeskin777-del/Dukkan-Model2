@@ -3302,18 +3302,40 @@ function siparisKaydet(guncelleId){
   const not        = document.getElementById('spNot')?.value.trim()||'';
   const kargoAdres = document.getElementById('spKargoAdres')?.value.trim()||'';
   const telefon    = document.getElementById('spTelefon')?.value.trim()||'';
+  const kdvOrani   = parseFloat(document.getElementById('spKdv')?.value)||0;
+
+  // Komisyon ve kargo bilgilerini kaydet (gelir köprüsü için)
+  let platDetay = null;
+  if(urunIdxVal !== '' && urunIdxVal !== undefined && platform){
+    const u = savedProds[parseInt(urunIdxVal)];
+    if(u && u.platforms){
+      const p = u.platforms.find(x=>x.name===platform);
+      if(p){
+        const girilenFiyat = parseTutar(document.getElementById('spFiyat')?.value) || p.fiyat;
+        const platSnap = (u.snapshot && u.snapshot.platlar||[]).find(x=>x.name===platform);
+        const komYuzde = platSnap ? (parseFloat(platSnap.komisyon)||0) : 0;
+        platDetay = {
+          komisyon:   girilenFiyat * komYuzde / 100,
+          komYuzde:   komYuzde,
+          kargo:      p.kg || 0,
+          gumrukT:    p.gumrukT || 0,
+          ekVergiT:   p.ekVergiT || 0,
+          tasiyiciTl: p.tasiyiciTl || 0
+        };
+      }
+    }
+  }
 
   if(!urunAd){ alert('Ürün adı giriniz!'); return; }
 
   if(guncelleId && guncelleId !== 'null'){
-    // Güncelle
     const idx = siparisler.findIndex(x=>x.id===guncelleId);
     if(idx>=0){
-      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
+      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
         urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null};
     }
   } else {
-    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, tarih, teslim, durum, not, kargoAdres, telefon,
+    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
       urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null});
   }
 
