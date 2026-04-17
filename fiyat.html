@@ -3587,8 +3587,9 @@ function siparisPopupAc(id){
     +'</div>'
     +'<div class="sp-popup-body">'
     +satirlar.map(([e,d])=>'<div class="sp-popup-satir"><span class="sp-popup-etiket">'+e+'</span><span class="sp-popup-deger">'+d+'</span></div>').join('')
-    +'<div style="display:flex;gap:8px;margin-top:16px;">'
+    +'<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">'
     +'<button class="btn bprim" style="flex:1;" onclick="siparisPopupKapat();siparisModalAc(siparisler.find(x=>x.id==='+s.id+'))">✏️ Düzenle</button>'
+    +((s.kargoAdres||s.musteriAd)?'<button class="btn" style="background:rgba(21,66,18,.08);color:var(--primary);border:1px solid rgba(21,66,18,.25);padding:8px 14px;" onclick="kargoEtiketiYazdir('+s.id+')">🖨️ Kargo Etiketi</button>':'')
     +'<button class="btn" style="background:rgba(255,107,107,.1);color:var(--a1);border:1px solid rgba(255,107,107,.25);padding:8px 16px;" onclick="siparisPopupKapat()">Kapat</button>'
     +'</div>'
     +'</div>'
@@ -3601,6 +3602,96 @@ function siparisPopupKapat(){
   const p = document.getElementById('spPopup');
   if(p) p.remove();
 }
+
+function kargoEtiketiYazdir(id){
+  const s = siparisler.find(x=>x.id===id);
+  if(!s) return;
+
+  const tarih = s.tarih ? new Date(s.tarih).toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'}) : '';
+  const toplam = '';
+
+  const etiket = window.open('','_blank','width=600,height=500');
+  etiket.document.write(`<!DOCTYPE html>
+<html lang="tr"><head>
+<meta charset="UTF-8">
+<title>Kargo Etiketi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Work+Sans:wght@400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Work Sans',sans-serif;background:#fff;color:#1e1c10;padding:32px;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
+  .etiket{width:100%;max-width:520px;border:2px solid #1e1c10;padding:0;}
+
+  /* GÖNDEREN */
+  .gonderen{background:#154212;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .gonderen-isim{font-family:'Newsreader',serif;font-size:18px;font-weight:400;font-style:italic;}
+  .gonderen-alt{font-size:9px;letter-spacing:.2em;text-transform:uppercase;opacity:.7;margin-top:2px;}
+  .tarih-badge{font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.7;}
+
+  /* AYIRICI */
+  .ayirici{display:flex;align-items:center;padding:10px 20px;background:#f4eedb;border-top:1px solid #c2c9bb;border-bottom:1px solid #c2c9bb;}
+  .ayirici-ic{display:flex;align-items:center;gap:8px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#72796e;}
+  .ayirici-line{flex:1;height:1px;background:#c2c9bb;}
+
+  /* ALICI */
+  .alici{padding:24px 20px;}
+  .alici-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#72796e;margin-bottom:12px;}
+  .alici-isim{font-family:'Newsreader',serif;font-size:28px;font-weight:400;line-height:1.2;margin-bottom:14px;color:#1e1c10;}
+  .alici-adres{font-size:16px;font-weight:600;line-height:1.8;color:#1e1c10;padding-left:0;white-space:pre-wrap;word-break:break-word;}
+  .alici-tel{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:13px;font-weight:600;letter-spacing:.03em;color:#154212;background:#f4eedb;padding:6px 12px;border-left:3px solid #154212;}
+
+  /* ALT */
+  .alt{border-top:1px solid #c2c9bb;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;background:#faf3e0;}
+  .urun-bilgi{font-size:11px;color:#42493e;line-height:1.6;}
+  .urun-ad{font-family:'Newsreader',serif;font-size:14px;font-weight:400;color:#1e1c10;}
+  .toplam{font-family:'Newsreader',serif;font-size:20px;font-weight:500;color:#154212;}
+
+  /* BARKOD İMİTASYONU */
+  .barkod{display:flex;gap:1.5px;align-items:flex-end;height:36px;margin-top:4px;}
+  .bar{background:#1e1c10;}
+
+  @media print{
+    body{padding:0;}
+    .no-print{display:none!important;}
+    .etiket{border:2px solid #000;max-width:100%;}
+  }
+</style>
+</head><body>
+<div>
+  <div class="etiket">
+    <div class="gonderen">
+      <div>
+        <div class="gonderen-isim">Keskeen Design</div>
+        <div class="gonderen-alt">Ahşap Ürünler · El Yapımı</div>
+      </div>
+      ${tarih?`<div class="tarih-badge">${tarih}</div>`:''}
+    </div>
+
+    <div class="ayirici">
+      <div class="ayirici-line"></div>
+      <div class="ayirici-ic" style="margin:0 12px;">✦ ALICI BİLGİLERİ ✦</div>
+      <div class="ayirici-line"></div>
+    </div>
+
+    <div class="alici">
+      <div class="alici-label">Gönderilecek Kişi</div>
+      <div class="alici-isim">${s.musteriAd ? escH2(s.musteriAd) : '—'}</div>
+      ${s.kargoAdres ? `<div class="alici-adres">${escH2(s.kargoAdres)}</div>` : ''}
+      ${s.telefon ? `<div class="alici-tel">📞 ${escH2(s.telefon)}</div>` : ''}
+    </div>
+
+
+  </div>
+
+  <div class="no-print" style="margin-top:24px;display:flex;gap:10px;justify-content:center;">
+    <button onclick="window.print()" style="padding:10px 28px;background:#154212;color:#fff;border:none;font-family:'Work Sans',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">🖨️ Yazdır</button>
+    <button onclick="window.close()" style="padding:10px 20px;background:none;border:1px solid #c2c9bb;font-family:'Work Sans',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;color:#72796e;">Kapat</button>
+  </div>
+</div>
+</body></html>`);
+  etiket.document.close();
+}
+
+function escH2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
