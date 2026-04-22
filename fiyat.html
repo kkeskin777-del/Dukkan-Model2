@@ -514,7 +514,7 @@
   .rek-badge.green{background:rgba(107,203,119,.1);color:var(--a3);border:1px solid rgba(107,203,119,.2);}
   .rek-badge.blue {background:rgba(77,150,255,.1);color:#60a5fa;border:1px solid rgba(77,150,255,.2);}
   .rek-badge.none {background:rgba(255,107,107,.08);color:var(--a1);border:1px solid rgba(255,107,107,.15);}
-  .rek-ekle{display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(251,191,36,.07);border:1px dashed rgba(251,191,36,.3);border-radius:10px;color:var(--a2);font-size:13px;font-weight:600;padding:10px 18px;cursor:pointer;transition:all .2s;margin-top:14px;font-family:'Nunito',sans-serif;width:100%;}
+  .rek-ekle{display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(251,191,36,.07);border:1px dashed rgba(251,191,36,.3);border-radius:10px;color:var(--a2);font-size:13px;font-weight:600;padding:10px 18px;cursor:pointer;transition:all .2s;margin-top:14px;font-family:'Nunito',sans-serif;width:100%;box-sizing:border-box;}
   .rek-ekle:hover{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.55);}
   .rek-sil{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.22);color:var(--a1);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .2s;}
   .rek-sil:hover{background:rgba(255,107,107,.22);}
@@ -799,6 +799,10 @@
   </div>
 </div>
 
+<!-- ═══════════ REKLAM ANALİZ ═══════════ -->
+<div id="tab-reklam" class="tab">
+</div>
+
 </div>
 
 <!-- ÖZET POPUP -->
@@ -824,10 +828,6 @@
     <div class="up-sec">Satış Fiyatları</div>
     <div class="up-plat-list" id="popupPlatlar"></div>
   </div>
-
-<!-- ═══════════ REKLAM ANALİZ ═══════════ -->
-<div id="tab-reklam" class="tab">
-</div>
 </div>
 
 <script>
@@ -3855,181 +3855,115 @@ function duzenleUrun(idx){
 // ════════════════════════════════════════════════════════
 //  REKLAM ANALİZ
 // ════════════════════════════════════════════════════════
-
 function rekHesapla(r){
-  const g=+r.goruntulem||0, m=+r.mesaj||0, s=+r.satis||0, u=+r.ucret||0;
-  return {
-    gbm: g>0 ? m/g*100 : null,   // Görüntüleme→Mesaj %
-    mbs: m>0 ? s/m*100 : null,   // Mesaj→Satış %
-    sbm: s>0 ? u/s     : null,   // Satış Başına Maliyet ₺
-  };
+  var g=+r.goruntulem||0, m=+r.mesaj||0, s=+r.satis||0, u=+r.ucret||0;
+  return{ gbm:g>0?m/g*100:null, mbs:m>0?s/m*100:null, sbm:s>0?u/s:null };
 }
-
-function rekOzet(data){
-  const t={u:0,g:0,m:0,s:0};
-  data.forEach(r=>{t.u+=+r.ucret||0;t.g+=+r.goruntulem||0;t.m+=+r.mesaj||0;t.s+=+r.satis||0;});
-  return{...t,
-    gbm: t.g>0 ? t.m/t.g*100 : null,
-    mbs: t.m>0 ? t.s/t.m*100 : null,
-    sbm: t.s>0 ? t.u/t.s     : null,
-  };
+function rekOzetHesapla(data){
+  var t={u:0,g:0,m:0,s:0};
+  data.forEach(function(r){t.u+=+r.ucret||0;t.g+=+r.goruntulem||0;t.m+=+r.mesaj||0;t.s+=+r.satis||0;});
+  return{u:t.u,g:t.g,m:t.m,s:t.s, gbm:t.g>0?t.m/t.g*100:null, mbs:t.m>0?t.s/t.m*100:null, sbm:t.s>0?t.u/t.s:null};
 }
-
-function rFmt(v,d=1){ return v==null?'—':(+v).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
-function rFmtI(v)   { return v==null?'—':(+v).toLocaleString('tr-TR'); }
-
-function rBadgePct(v,cls='amber'){
-  return v==null
-    ? `<span class="rek-badge none">—</span>`
-    : `<span class="rek-badge ${cls}">%${rFmt(v)}</span>`;
-}
-function rBadgeTl(v){
-  return v==null
-    ? `<span class="rek-badge none">—</span>`
-    : `<span class="rek-badge blue">${rFmt(v,0)} ₺</span>`;
-}
+function rF(v,d){ d=d===undefined?1:d; return v==null?'—':(+v).toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function rFI(v){ return v==null?'—':(+v).toLocaleString('tr-TR'); }
+function rBPct(v,c){ c=c||'amber'; return v==null?'<span class="rek-badge none">—</span>':'<span class="rek-badge '+c+'">%'+rF(v)+'</span>'; }
+function rBTl(v){ return v==null?'<span class="rek-badge none">—</span>':'<span class="rek-badge blue">'+rF(v,0)+' ₺</span>'; }
 
 function renderReklam(){
-  const data = reklamVeriler;
-  const oz   = rekOzet(data);
-  const el   = document.getElementById('tab-reklam');
+  var data=reklamVeriler, oz=rekOzetHesapla(data), el=document.getElementById('tab-reklam');
   if(!el) return;
 
-  /* Özet Kartları */
-  const ozetCard = `
-<div class="card" style="animation-delay:.04s">
-  <div class="ctitle"><span class="ico iy">📊</span>Tüm Haftalara Ait Toplam &amp; Oranlar</div>
-  <div class="rek-ozet-grid">
-    <div class="rek-kart amber">
-      <div class="rek-kart-lbl">Toplam Harcama</div>
-      <div class="rek-kart-val" id="rok-ucret">${rFmtI(oz.u)} ₺</div>
-      <div class="rek-kart-sub">${data.length} hafta</div>
-    </div>
-    <div class="rek-kart">
-      <div class="rek-kart-lbl">Toplam Görüntüleme</div>
-      <div class="rek-kart-val" id="rok-goruntulem">${rFmtI(oz.g)}</div>
-      <div class="rek-kart-sub">&nbsp;</div>
-    </div>
-    <div class="rek-kart">
-      <div class="rek-kart-lbl">Toplam Mesaj</div>
-      <div class="rek-kart-val" id="rok-mesaj">${rFmtI(oz.m)}</div>
-      <div class="rek-kart-sub">&nbsp;</div>
-    </div>
-    <div class="rek-kart">
-      <div class="rek-kart-lbl">Toplam Satış</div>
-      <div class="rek-kart-val" id="rok-satis">${rFmtI(oz.s)}</div>
-      <div class="rek-kart-sub">&nbsp;</div>
-    </div>
-  </div>
-  <div class="rek-oran-grid">
-    <div class="rek-kart green">
-      <div class="rek-kart-lbl">Görüntüleme → Mesaj</div>
-      <div class="rek-kart-val" id="rok-gbm">${oz.gbm!=null?'%'+rFmt(oz.gbm):'—'}</div>
-      <div class="rek-kart-sub">Her 100 görüntülemede mesaj</div>
-    </div>
-    <div class="rek-kart green">
-      <div class="rek-kart-lbl">Mesaj → Satış</div>
-      <div class="rek-kart-val" id="rok-mbs">${oz.mbs!=null?'%'+rFmt(oz.mbs):'—'}</div>
-      <div class="rek-kart-sub">Her 100 mesajda satış</div>
-    </div>
-    <div class="rek-kart blue">
-      <div class="rek-kart-lbl">Satış Başına Maliyet</div>
-      <div class="rek-kart-val" id="rok-sbm">${oz.sbm!=null?rFmt(oz.sbm,0)+' ₺':'—'}</div>
-      <div class="rek-kart-sub">Bir satış için ortalama harcama</div>
-    </div>
-  </div>
-</div>`;
+  var ozetCard =
+    '<div class="card" style="animation-delay:.04s">'+
+    '<div class="ctitle"><span class="ico iy">📊</span>Tüm Haftalara Ait Toplam &amp; Oranlar</div>'+
+    '<div class="rek-ozet-grid">'+
+      '<div class="rek-kart amber"><div class="rek-kart-lbl">Toplam Harcama</div><div class="rek-kart-val" id="rok-ucret">'+rFI(oz.u)+' ₺</div><div class="rek-kart-sub">'+data.length+' hafta</div></div>'+
+      '<div class="rek-kart"><div class="rek-kart-lbl">Toplam Görüntüleme</div><div class="rek-kart-val" id="rok-goruntulem">'+rFI(oz.g)+'</div><div class="rek-kart-sub">&nbsp;</div></div>'+
+      '<div class="rek-kart"><div class="rek-kart-lbl">Toplam Mesaj</div><div class="rek-kart-val" id="rok-mesaj">'+rFI(oz.m)+'</div><div class="rek-kart-sub">&nbsp;</div></div>'+
+      '<div class="rek-kart"><div class="rek-kart-lbl">Toplam Satış</div><div class="rek-kart-val" id="rok-satis">'+rFI(oz.s)+'</div><div class="rek-kart-sub">&nbsp;</div></div>'+
+    '</div>'+
+    '<div class="rek-oran-grid">'+
+      '<div class="rek-kart green"><div class="rek-kart-lbl">Görüntüleme → Mesaj</div><div class="rek-kart-val" id="rok-gbm">'+(oz.gbm!=null?'%'+rF(oz.gbm):'—')+'</div><div class="rek-kart-sub">Her 100 görüntülemede mesaj</div></div>'+
+      '<div class="rek-kart green"><div class="rek-kart-lbl">Mesaj → Satış</div><div class="rek-kart-val" id="rok-mbs">'+(oz.mbs!=null?'%'+rF(oz.mbs):'—')+'</div><div class="rek-kart-sub">Her 100 mesajda satış</div></div>'+
+      '<div class="rek-kart blue"><div class="rek-kart-lbl">Satış Başına Maliyet</div><div class="rek-kart-val" id="rok-sbm">'+(oz.sbm!=null?rF(oz.sbm,0)+' ₺':'—')+'</div><div class="rek-kart-sub">Bir satış için ortalama harcama</div></div>'+
+    '</div></div>';
 
-  /* Haftalık Tablo */
-  let tbody = '';
+  var tbody='';
   if(data.length===0){
-    tbody = `<tr><td colspan="9"><div class="rek-empty"><div class="rek-empty-ico">📭</div>Henüz veri girilmedi.<br>Aşağıdan hafta ekleyebilirsin.</div></td></tr>`;
+    tbody='<tr><td colspan="9"><div class="rek-empty"><div class="rek-empty-ico">📭</div>Henüz veri girilmedi. Aşağıdan hafta ekleyebilirsin.</div></td></tr>';
   } else {
-    data.forEach((r,i)=>{
-      const h = rekHesapla(r);
-      const haftaVal = (r.hafta||'').replace(/"/g,'&quot;');
-      tbody += `<tr>
-        <td><input class="rek-inp"     value="${haftaVal}" oninput="rekGuncelle(${i},'hafta',this.value)"       placeholder="Hafta ${i+1}" style="min-width:90px;"></td>
-        <td><input class="rek-inp num" type="number" min="0" value="${r.ucret||''}"      oninput="rekGuncelle(${i},'ucret',this.value)"      placeholder="0" style="min-width:90px;"></td>
-        <td><input class="rek-inp num" type="number" min="0" value="${r.goruntulem||''}" oninput="rekGuncelle(${i},'goruntulem',this.value)" placeholder="0" style="min-width:100px;"></td>
-        <td><input class="rek-inp num" type="number" min="0" value="${r.mesaj||''}"      oninput="rekGuncelle(${i},'mesaj',this.value)"      placeholder="0" style="min-width:80px;"></td>
-        <td><input class="rek-inp num" type="number" min="0" value="${r.satis||''}"      oninput="rekGuncelle(${i},'satis',this.value)"      placeholder="0" style="min-width:70px;"></td>
-        <td style="text-align:center;" id="rek-gbm-${i}">${rBadgePct(h.gbm,'amber')}</td>
-        <td style="text-align:center;" id="rek-mbs-${i}">${rBadgePct(h.mbs,'green')}</td>
-        <td style="text-align:center;" id="rek-sbm-${i}">${rBadgeTl(h.sbm)}</td>
-        <td style="text-align:center;"><button class="rek-sil" onclick="rekSil(${i})" title="Sil">✕</button></td>
-      </tr>`;
+    data.forEach(function(r,i){
+      var h=rekHesapla(r), hv=(r.hafta||'').replace(/"/g,'&quot;');
+      tbody+=
+        '<tr>'+
+        '<td><input class="rek-inp" value="'+hv+'" oninput="rekGuncelle('+i+',\'hafta\',this.value)" placeholder="Hafta '+(i+1)+'" style="min-width:90px;"></td>'+
+        '<td><input class="rek-inp num" type="number" min="0" value="'+(r.ucret||'')+'" oninput="rekGuncelle('+i+',\'ucret\',this.value)" placeholder="0" style="min-width:90px;"></td>'+
+        '<td><input class="rek-inp num" type="number" min="0" value="'+(r.goruntulem||'')+'" oninput="rekGuncelle('+i+',\'goruntulem\',this.value)" placeholder="0" style="min-width:100px;"></td>'+
+        '<td><input class="rek-inp num" type="number" min="0" value="'+(r.mesaj||'')+'" oninput="rekGuncelle('+i+',\'mesaj\',this.value)" placeholder="0" style="min-width:80px;"></td>'+
+        '<td><input class="rek-inp num" type="number" min="0" value="'+(r.satis||'')+'" oninput="rekGuncelle('+i+',\'satis\',this.value)" placeholder="0" style="min-width:70px;"></td>'+
+        '<td style="text-align:center;" id="rek-gbm-'+i+'">'+rBPct(h.gbm,'amber')+'</td>'+
+        '<td style="text-align:center;" id="rek-mbs-'+i+'">'+rBPct(h.mbs,'green')+'</td>'+
+        '<td style="text-align:center;" id="rek-sbm-'+i+'">'+rBTl(h.sbm)+'</td>'+
+        '<td style="text-align:center;"><button class="rek-sil" onclick="rekSil('+i+')" title="Sil">✕</button></td>'+
+        '</tr>';
     });
   }
 
-  const tabloCard = `
-<div class="card" style="animation-delay:.1s">
-  <div class="ctitle"><span class="ico ib">📅</span>Haftalık Veri Girişi</div>
-  <div class="rek-tbl-wrap">
-    <table class="rek-tbl">
-      <thead><tr>
-        <th class="l" style="min-width:100px;">Hafta</th>
-        <th class="r" style="min-width:100px;">Ücret (₺)</th>
-        <th class="r" style="min-width:110px;">Görüntüleme</th>
-        <th class="r" style="min-width:80px;">Mesaj</th>
-        <th class="r" style="min-width:70px;">Satış</th>
-        <th class="r" style="min-width:120px;">Görünt.→Mesaj %</th>
-        <th class="r" style="min-width:110px;">Mesaj→Satış %</th>
-        <th class="r" style="min-width:130px;">Satış Başına Maliyet</th>
-        <th style="min-width:36px;"></th>
-      </tr></thead>
-      <tbody id="rekTbody">${tbody}</tbody>
-    </table>
-  </div>
-  <button class="rek-ekle" onclick="rekEkle()">＋ &nbsp;Yeni Hafta Ekle</button>
-</div>`;
+  var tabloCard =
+    '<div class="card" style="animation-delay:.1s">'+
+    '<div class="ctitle"><span class="ico ib">📅</span>Haftalık Veri Girişi</div>'+
+    '<div class="rek-tbl-wrap"><table class="rek-tbl"><thead><tr>'+
+    '<th class="l" style="min-width:100px;">Hafta</th>'+
+    '<th class="r" style="min-width:100px;">Ücret (₺)</th>'+
+    '<th class="r" style="min-width:110px;">Görüntüleme</th>'+
+    '<th class="r" style="min-width:80px;">Mesaj</th>'+
+    '<th class="r" style="min-width:70px;">Satış</th>'+
+    '<th class="r" style="min-width:120px;">Görünt.→Mesaj %</th>'+
+    '<th class="r" style="min-width:110px;">Mesaj→Satış %</th>'+
+    '<th class="r" style="min-width:130px;">Satış Başına Maliyet</th>'+
+    '<th style="min-width:36px;"></th>'+
+    '</tr></thead><tbody id="rekTbody">'+tbody+'</tbody></table></div>'+
+    '<button class="rek-ekle" onclick="rekEkle()">＋ &nbsp;Yeni Hafta Ekle</button>'+
+    '</div>';
 
   el.innerHTML = ozetCard + tabloCard;
 }
 
-function rekGuncelle(idx, alan, val){
+function rekGuncelle(idx,alan,val){
   if(!reklamVeriler[idx]) return;
-  reklamVeriler[idx][alan] = val;
-  syncYaz('fhp_reklam', reklamVeriler);   // ← GAS'a gönder
-  /* Sadece o satırın badge'lerini güncelle (DOM yeniden çizme yok) */
-  const h = rekHesapla(reklamVeriler[idx]);
-  const gbm = document.getElementById('rek-gbm-'+idx);
-  const mbs = document.getElementById('rek-mbs-'+idx);
-  const sbm = document.getElementById('rek-sbm-'+idx);
-  if(gbm) gbm.innerHTML = rBadgePct(h.gbm,'amber');
-  if(mbs) mbs.innerHTML = rBadgePct(h.mbs,'green');
-  if(sbm) sbm.innerHTML = rBadgeTl(h.sbm);
-  /* Özet satırlarını güncelle */
-  const oz = rekOzet(reklamVeriler);
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('rok-ucret',      rFmtI(oz.u)+' ₺');
-  set('rok-goruntulem', rFmtI(oz.g));
-  set('rok-mesaj',      rFmtI(oz.m));
-  set('rok-satis',      rFmtI(oz.s));
-  set('rok-gbm',  oz.gbm!=null?'%'+rFmt(oz.gbm):'—');
-  set('rok-mbs',  oz.mbs!=null?'%'+rFmt(oz.mbs):'—');
-  set('rok-sbm',  oz.sbm!=null?rFmt(oz.sbm,0)+' ₺':'—');
+  reklamVeriler[idx][alan]=val;
+  syncYaz('fhp_reklam',reklamVeriler);
+  var h=rekHesapla(reklamVeriler[idx]);
+  var e1=document.getElementById('rek-gbm-'+idx), e2=document.getElementById('rek-mbs-'+idx), e3=document.getElementById('rek-sbm-'+idx);
+  if(e1)e1.innerHTML=rBPct(h.gbm,'amber');
+  if(e2)e2.innerHTML=rBPct(h.mbs,'green');
+  if(e3)e3.innerHTML=rBTl(h.sbm);
+  var oz=rekOzetHesapla(reklamVeriler);
+  function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  set('rok-ucret',rFI(oz.u)+' ₺'); set('rok-goruntulem',rFI(oz.g));
+  set('rok-mesaj',rFI(oz.m)); set('rok-satis',rFI(oz.s));
+  set('rok-gbm',oz.gbm!=null?'%'+rF(oz.gbm):'—');
+  set('rok-mbs',oz.mbs!=null?'%'+rF(oz.mbs):'—');
+  set('rok-sbm',oz.sbm!=null?rF(oz.sbm,0)+' ₺':'—');
 }
-
 function rekEkle(){
-  reklamVeriler.push({hafta:'', ucret:'', goruntulem:'', mesaj:'', satis:''});
-  syncYaz('fhp_reklam', reklamVeriler);
+  reklamVeriler.push({hafta:'',ucret:'',goruntulem:'',mesaj:'',satis:''});
+  syncYaz('fhp_reklam',reklamVeriler);
   renderReklam();
-  setTimeout(()=>{
-    const rows = document.querySelectorAll('#rekTbody tr');
-    if(!rows.length) return;
+  setTimeout(function(){
+    var rows=document.querySelectorAll('#rekTbody tr');
+    if(!rows.length)return;
     rows[rows.length-1].scrollIntoView({behavior:'smooth',block:'nearest'});
-    rows[rows.length-1].querySelector('input')?.focus();
-  }, 60);
+    var inp=rows[rows.length-1].querySelector('input');
+    if(inp)inp.focus();
+  },60);
 }
-
 function rekSil(idx){
-  if(!confirm('Bu haftayı silmek istediğine emin misin?')) return;
+  if(!confirm('Bu haftayı silmek istediğine emin misin?'))return;
   reklamVeriler.splice(idx,1);
-  syncYaz('fhp_reklam', reklamVeriler);
+  syncYaz('fhp_reklam',reklamVeriler);
   renderReklam();
 }
-
 
 init();
 </script>
