@@ -337,6 +337,7 @@ header{
           <option value="1">%1</option>
           <option value="10">%10</option>
           <option value="20" selected>%20</option>
+          <option value="100">%100 — Sadece KDV</option>
         </select>
       </div>
       <div class="fg"><label>Tarih</label><input type="date" id="gelirTarih"></div>
@@ -363,6 +364,7 @@ header{
           <option value="1">%1</option>
           <option value="10">%10</option>
           <option value="20" selected>%20</option>
+          <option value="100">%100 — Sadece KDV</option>
         </select>
       </div>
       <div class="fg"><label>Tarih</label><input type="date" id="giderTarih"></div>
@@ -398,7 +400,7 @@ header{
       </div>
       <div class="modal-grid">
         <div class="fg">
-          <label>Tutar (₺) — KDV Dahil</label>
+          <label>Tutar (₺)</label>
           <input type="number" id="editTutar" placeholder="0.00" min="0" step="0.01">
         </div>
         <div class="fg">
@@ -408,6 +410,7 @@ header{
             <option value="1">%1</option>
             <option value="10">%10</option>
             <option value="20">%20</option>
+            <option value="100">%100 — Sadece KDV</option>
           </select>
         </div>
         <div class="fg">
@@ -507,7 +510,12 @@ function escH(s){ const d=document.createElement('div');d.textContent=s;return d
 function bugunTarih(){ return new Date().toISOString().split('T')[0]; }
 
 function kdvHesapla(tutar, kdvOrani){
-  // Tutar KDV DAHİL girilirse → kdvHariç ve kdv tutarı
+  // %100 seçilirse: girilen tutar direkt KDV tutarıdır,
+  // gelir/gider toplamına EKLENMEZ — sadece KDV dengesine işlenir.
+  if(kdvOrani === 100){
+    return { dahil: 0, hariç: 0, kdvT: tutar };
+  }
+  // Normal mod: Tutar KDV DAHİL girilir → kdvHariç ve kdv tutarı hesaplanır
   const kdvH = tutar / (1 + kdvOrani/100);
   const kdvT = tutar - kdvH;
   return { dahil: tutar, hariç: kdvH, kdvT };
@@ -606,18 +614,24 @@ function renderGelirList(){
     el.innerHTML=`<div class="empty-state"><div class="es-icon">📈</div><p>Henüz gelir kaydı yok.<br>Yukarıdan ekleyin.</p></div>`;
     return;
   }
-  el.innerHTML = liste.map(e=>`
+  el.innerHTML = liste.map(e=>{
+    const sadecKdv = e.kdvOrani === 100;
+    const badge = sadecKdv
+      ? `<span class="badge-kdv" style="background:rgba(192,57,43,.15);color:var(--kdv-red);border-color:rgba(192,57,43,.3);">🧾 Sadece KDV</span>`
+      : (e.kdvOrani>0 ? `<span class="badge-kdv">%${e.kdvOrani} KDV</span>` : '');
+    return `
     <div class="entry income-row">
-      <div class="entry-name">${escH(e.ad)} ${e.kdvOrani>0?`<span class="badge-kdv">%${e.kdvOrani} KDV</span>`:''}</div>
+      <div class="entry-name">${escH(e.ad)} ${badge}</div>
       <div class="entry-date">${tarihStr(e.tarih)}</div>
-      <div class="entry-val green">${fmt(e.hariç)} ₺</div>
+      <div class="entry-val ${sadecKdv?'muted':'green'}">${sadecKdv?'—':fmt(e.hariç)+' ₺'}</div>
       <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
-      <div class="entry-val green">${fmt(e.dahil)} ₺</div>
+      <div class="entry-val ${sadecKdv?'muted':'green'}">${sadecKdv?'—':fmt(e.dahil)+' ₺'}</div>
       <div style="display:flex;gap:5px;">
         <button class="btn-edit" onclick="modalAc('gelir',${e.id})">✏️</button>
         <button class="btn btn-del btn-sm" onclick="gelirSil(${e.id})">🗑</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════
@@ -658,18 +672,24 @@ function renderGiderList(){
     el.innerHTML=`<div class="empty-state"><div class="es-icon">📉</div><p>Henüz gider kaydı yok.<br>Yukarıdan ekleyin.</p></div>`;
     return;
   }
-  el.innerHTML = liste.map(e=>`
+  el.innerHTML = liste.map(e=>{
+    const sadecKdv = e.kdvOrani === 100;
+    const badge = sadecKdv
+      ? `<span class="badge-kdv" style="background:rgba(192,57,43,.15);color:var(--kdv-red);border-color:rgba(192,57,43,.3);">🧾 Sadece KDV</span>`
+      : (e.kdvOrani>0 ? `<span class="badge-kdv">%${e.kdvOrani} KDV</span>` : '');
+    return `
     <div class="entry expense-row">
-      <div class="entry-name">${escH(e.ad)} ${e.kdvOrani>0?`<span class="badge-kdv">%${e.kdvOrani} KDV</span>`:''}</div>
+      <div class="entry-name">${escH(e.ad)} ${badge}</div>
       <div class="entry-date">${tarihStr(e.tarih)}</div>
-      <div class="entry-val red">${fmt(e.hariç)} ₺</div>
+      <div class="entry-val ${sadecKdv?'muted':'red'}">${sadecKdv?'—':fmt(e.hariç)+' ₺'}</div>
       <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
-      <div class="entry-val red">${fmt(e.dahil)} ₺</div>
+      <div class="entry-val ${sadecKdv?'muted':'red'}">${sadecKdv?'—':fmt(e.dahil)+' ₺'}</div>
       <div style="display:flex;gap:5px;">
         <button class="btn-edit" onclick="modalAc('gider',${e.id})">✏️</button>
         <button class="btn btn-del btn-sm" onclick="giderSil(${e.id})">🗑</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════
@@ -767,15 +787,21 @@ function renderKayitOzeti(gL, gD){
   if(!allEntries.length) return '<div class="empty-state"><div class="es-icon">📊</div><p>Bu dönemde kayıt yok.</p></div>';
   return `<div class="card" style="margin-top:18px;">
     <div class="ctitle"><div class="ico ib">📋</div>Dönem Kayıtları</div>
-    ${allEntries.map(e=>`
+    ${allEntries.map(e=>{
+      const sadecKdv = e.kdvOrani === 100;
+      const badge = sadecKdv
+        ? `<span class="badge-kdv" style="background:rgba(192,57,43,.15);color:var(--kdv-red);border-color:rgba(192,57,43,.3);">🧾 Sadece KDV</span>`
+        : (e.kdvOrani>0 ? `<span class="badge-kdv">%${e.kdvOrani}</span>` : '');
+      return `
       <div class="entry ${e.tip==='gelir'?'income-row':'expense-row'}">
-        <div class="entry-name">${escH(e.ad)} ${e.kdvOrani>0?`<span class="badge-kdv">%${e.kdvOrani}</span>`:''}<small>${e.tip==='gelir'?'📈 Gelir':'📉 Gider'}</small></div>
+        <div class="entry-name">${escH(e.ad)} ${badge}<small>${e.tip==='gelir'?'📈 Gelir':'📉 Gider'}</small></div>
         <div class="entry-date">${tarihStr(e.tarih)}</div>
-        <div class="entry-val ${e.tip==='gelir'?'green':'red'}">${fmt(e.hariç)} ₺</div>
+        <div class="entry-val ${sadecKdv?'muted':e.tip==='gelir'?'green':'red'}">${sadecKdv?'—':fmt(e.hariç)+' ₺'}</div>
         <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
-        <div class="entry-val ${e.tip==='gelir'?'green':'red'}">${fmt(e.dahil)} ₺</div>
+        <div class="entry-val ${sadecKdv?'muted':e.tip==='gelir'?'green':'red'}">${sadecKdv?'—':fmt(e.dahil)+' ₺'}</div>
         <span></span>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -950,7 +976,7 @@ function modalAc(tip, id){
   document.getElementById('editModalBaslik').textContent = tip==='gelir' ? '📈 Geliri Düzenle' : '📉 Gideri Düzenle';
   document.getElementById('editModalBox').className = 'modal' + (tip==='gider' ? ' expense-modal' : '');
   document.getElementById('editAd').value    = e.ad;
-  document.getElementById('editTutar').value = e.dahil;
+  document.getElementById('editTutar').value = e.kdvOrani === 100 ? e.kdvT : e.dahil;
   document.getElementById('editKdv').value   = e.kdvOrani;
   document.getElementById('editTarih').value = e.tarih;
   document.getElementById('editModal').style.display = 'flex';
