@@ -84,6 +84,17 @@
   .gr-hdr{display:grid;grid-template-columns:2fr 120px 34px;gap:6px;margin-bottom:5px;}
   .gr-hdr label{margin-bottom:0;}
 
+  /* Dışarıdan satın alınan ürünler satırı (adetli) */
+  .dis-gr{display:grid;grid-template-columns:2fr 65px 105px 34px;gap:6px;margin-bottom:6px;align-items:center;}
+  .dis-gr input{margin-bottom:0;}
+  .dis-gr-hdr{display:grid;grid-template-columns:2fr 65px 105px 34px;gap:6px;margin-bottom:5px;}
+  .dis-gr-hdr label{margin-bottom:0;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+  /* Düzenlenebilir ahşap maliyet input */
+  .ah-maliyet-inp{background:rgba(107,203,119,.1);border:1px solid rgba(107,203,119,.25);border-radius:8px;padding:8px 9px;font-family:'Libre Baskerville',serif;font-size:12px;font-weight:700;color:var(--a3);text-align:center;width:100%;outline:none;transition:border-color .2s;}
+  .ah-maliyet-inp:focus{border-color:var(--a3);box-shadow:0 0 0 2px rgba(107,203,119,.15);}
+  .ah-maliyet-inp.manuel{background:rgba(255,217,61,.08);border-color:rgba(255,217,61,.4);color:var(--a2);}
+  .ah-maliyet-inp::placeholder{color:var(--muted);font-size:11px;}
+
   /* PLATFORM KARTLARI - artık manuel komisyon girişli */
   .plat-row{display:grid;grid-template-columns:28px 1fr 90px 80px 80px 100px 34px;gap:8px;margin-bottom:8px;align-items:center;}
   .plat-row input{margin-bottom:0;}
@@ -334,7 +345,9 @@
 
     /* Dış ürünler */
     .gr-hdr{display:none !important;}
+    .dis-gr-hdr{display:none !important;}
     .gr{grid-template-columns:1fr 90px 34px !important;}
+    .dis-gr{grid-template-columns:1fr 50px 80px 34px !important;}
 
     /* Platform satırları */
     .plat-hdr{display:none !important;}
@@ -603,7 +616,7 @@
         <label>En (cm)</label>
         <label>Boy (cm)</label>
         <label>cm² Fiyatı (₺)</label>
-        <label>Maliyet</label>
+        <label style="color:var(--a3);">Maliyet ✎</label>
         <span></span>
       </div>
       <div id="ahsapList"></div>
@@ -620,7 +633,7 @@
 
     <div class="slbl"><div class="ico ib" style="width:24px;height:24px;font-size:12px;">🛍️</div>Dışarıdan Satın Alınan Ürünler</div>
     <div class="ibar">Masa ayağı, vida, menteşe, tutamaç, boya gibi hazır satın aldığınız ürünler. <span style="color:var(--a2);">Genel Giderler sekmesindeki listeden hızla seçebilirsiniz.</span></div>
-    <div class="gr-hdr"><label>Ürün Adı</label><label>Maliyet (₺)</label><span></span></div>
+    <div class="dis-gr-hdr"><label>Ürün Adı</label><label>Adet</label><label>Birim Fiyat (₺)</label><span></span></div>
     <div id="disList"></div>
     <button class="btn badd" onclick="addDis()">➕ Ürün Ekle</button>
   </div>
@@ -1510,7 +1523,7 @@ function recalcSavedProds(){
       ahsapMal += en*boy*cm2f;
     });
     let disMal = 0;
-    (snap.disler||[]).forEach(d=>{ disMal += parseTutar(d.fiyat); });
+    (snap.disler||[]).forEach(d=>{ disMal += (d.toplam || (parseTutar(d.fiyat) * (d.adet||1))); });
     const iscilik  = parseTutar(snap.iscilik);
     const sabitPay = parseTutar(snap.sabitPay);
     const dilimPay = parseTutar(snap.dilimPay);
@@ -1614,7 +1627,9 @@ function addAhsap(){
     <input type="text" placeholder="50 cm veya 9in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
     <input type="text" placeholder="50 cm veya 12in" autocomplete="off" oninput="inchCevir(this);calcAhsapRow('${id}')">
     <input type="number" placeholder="cm² fiyatı" min="0" step="0.000001" oninput="calcAhsapRow('${id}')">
-    <div class="ah-maliyet" id="ahmal_${id}">₺ 0,00</div>
+    <input type="number" class="ah-maliyet-inp" id="ahmal_${id}" placeholder="Maliyet ₺" min="0" step="0.01"
+      title="Otomatik hesaplanır. Manuel girmek için direkt yazın."
+      oninput="this.classList.add('manuel');calcAhsap()">
     <button class="bico" onclick="removeRow('${id}'); calcAhsap()">×</button>
   `;
   document.getElementById('ahsapList').appendChild(div);
@@ -1643,12 +1658,16 @@ function ahsapHammaddeSecildi(id){
 function calcAhsapRow(id){
   const row = document.getElementById(id); if(!row) return;
   const inp = row.querySelectorAll('input');
-  // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=cm2f
+  // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=cm2f, inp[4]=maliyet
   const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
   const cm2f=parseFloat(inp[3].value)||0;
-  const mal = en*boy*cm2f;
-  const badge = document.getElementById('ahmal_'+id);
-  if(badge) badge.textContent = '₺ '+fmt(mal);
+  const malInput = inp[4]; // ah-maliyet-inp
+  if(en>0 && boy>0 && cm2f>0){
+    const mal = en*boy*cm2f;
+    if(malInput && !malInput.classList.contains('manuel')){
+      malInput.value = mal.toFixed(2);
+    }
+  }
   calcAhsap();
 }
 
@@ -1656,9 +1675,19 @@ function calcAhsap(){
   let total=0;
   document.querySelectorAll('#ahsapList .ah-row').forEach(row=>{
     const inp = row.querySelectorAll('input');
-    const en=inchParse(inp[1].value), boy=inchParse(inp[2].value);
-    const cm2f=parseFloat(inp[3].value)||0;
-    total += en*boy*cm2f;
+    // inp[0]=açıklama, inp[1]=en, inp[2]=boy, inp[3]=cm2f, inp[4]=maliyet
+    const en=inchParse(inp[1]?.value), boy=inchParse(inp[2]?.value);
+    const cm2f=parseFloat(inp[3]?.value)||0;
+    const malInput = inp[4];
+    if(en>0 && boy>0 && cm2f>0){
+      // Otomatik hesaplama — manuel seçilmemişse, otomatik güncelle
+      const hesap = en*boy*cm2f;
+      if(malInput && !malInput.classList.contains('manuel')) malInput.value = hesap.toFixed(2);
+      total += hesap;
+    } else {
+      // Manuel maliyet (en/boy/cm2f eksik)
+      total += parseFloat(malInput?.value)||0;
+    }
   });
   document.getElementById('ahsapTotal').textContent = '₺ '+fmt(total);
   // Ürün başına ahşap maliyeti
@@ -1687,13 +1716,14 @@ function buildDisOptions(){
 function addDis(){
   cnt.dis++;
   const id='dis_'+cnt.dis;
-  const div=document.createElement('div'); div.className='gr'; div.id=id;
+  const div=document.createElement('div'); div.className='dis-gr'; div.id=id;
   div.innerHTML=`
     <div style="display:flex;flex-direction:column;gap:4px;">
       ${disUrunListesi.length>0?`<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`:''}
-      <input type="text" placeholder="Masa ayağı, vida, boya...">
+      <input type="text" placeholder="Ürün adı...">
     </div>
-    <input type="number" placeholder="0.00" min="0" step="0.01">
+    <input type="number" placeholder="1" min="1" step="1" value="1" style="text-align:center;" oninput="disToplamGoster('${id}')">
+    <input type="number" placeholder="0.00" min="0" step="0.01" oninput="disToplamGoster('${id}')">
     <button class="bico" onclick="removeRow('${id}')">×</button>`;
   document.getElementById('disList').appendChild(div);
 }
@@ -1705,15 +1735,21 @@ function disUrunSecildi(id){
   if(!d) return;
   const inp = row.querySelectorAll('input');
   if(inp[0]) inp[0].value = d.ad;
-  if(inp[1]) inp[1].value = d.fiyat;
+  // inp[1] = adet (değiştirme), inp[2] = birim fiyat
+  if(inp[2]) inp[2].value = d.fiyat;
+  disToplamGoster(id);
+}
+function disToplamGoster(id){
+  // Anlık toplam göster — isteğe bağlı genişletme noktası
 }
 function getDisToplam(){
   let t=0;
-  document.querySelectorAll('#disList .gr').forEach(r=>{
+  document.querySelectorAll('#disList .dis-gr').forEach(r=>{
     const inputs = r.querySelectorAll('input');
-    // fiyat her zaman son input'ta
-    const fiyatInp = inputs[inputs.length-1];
-    t+=parseFloat(fiyatInp?.value)||0;
+    // inputs[0]=ad, inputs[1]=adet, inputs[2]=birim fiyat
+    const adet  = parseFloat(inputs[1]?.value)||1;
+    const fiyat = parseFloat(inputs[2]?.value)||0;
+    t += adet * fiyat;
   });
   return t;
 }
@@ -2296,22 +2332,25 @@ function snapshotForm(){
   document.querySelectorAll('#ahsapList .ah-row').forEach(row=>{
     const sel = row.querySelector('select');
     const inp = row.querySelectorAll('input');
+    const malInput = inp[4];
     ahsaplar.push({
       hmIdx: sel ? sel.value : '',
       aciklama: inp[0]?.value||'',
       en:  String(inchParse(inp[1]?.value)||''),
       boy: String(inchParse(inp[2]?.value)||''),
-      cm2f:inp[3]?.value||''
+      cm2f:inp[3]?.value||'',
+      maliyet: malInput?.value||'',
+      manuelMaliyet: malInput?.classList.contains('manuel')||false
     });
   });
   // Dış ürünler
   const disler = [];
-  document.querySelectorAll('#disList .gr').forEach(row=>{
+  document.querySelectorAll('#disList .dis-gr').forEach(row=>{
     const inp = row.querySelectorAll('input');
-    // Yeni yapıda select + text input + number input var
-    const adInp = inp[0];
-    const fiyatInp = inp[inp.length-1];
-    disler.push({ad: adInp?.value||'', fiyat: parseTutar(fiyatInp?.value)});
+    // inp[0]=ad, inp[1]=adet, inp[2]=birim fiyat
+    const adet  = parseFloat(inp[1]?.value)||1;
+    const fiyat = parseTutar(inp[2]?.value);
+    if(inp[0]?.value||fiyat) disler.push({ad: inp[0]?.value||'', adet, fiyat, toplam: adet*fiyat});
   });
   // Platformlar
   const platlar = [];
@@ -3981,6 +4020,8 @@ function duzenleUrun(idx){
       if(inp[2]) inp[2].value = a.boy||'';
       if(inp[3]) inp[3].value = a.kal||'';
       if(inp[3] && (a.cm2f||a.cm3f)) { inp[3].value = a.cm2f||a.cm3f; }
+      // Maliyet input'unu geri yükle
+      if(inp[4] && a.maliyet){ inp[4].value = a.maliyet; if(a.manuelMaliyet) inp[4].classList.add('manuel'); }
       calcAhsapRow(row.id);
     });
 
@@ -3989,11 +4030,12 @@ function duzenleUrun(idx){
     const disler = snap.disler && snap.disler.length ? snap.disler : [{}];
     disler.forEach(d => {
       addDis();
-      const rows = document.querySelectorAll('#disList .gr');
+      const rows = document.querySelectorAll('#disList .dis-gr');
       const row = rows[rows.length-1];
       const inp = row.querySelectorAll('input');
       if(inp[0]) inp[0].value = d.ad||'';
-      if(inp[1]) inp[1].value = d.fiyat||'';
+      if(inp[1]) inp[1].value = d.adet||1;
+      if(inp[2]) inp[2].value = d.fiyat||'';
     });
 
     // 4. İşçilik, sabit pay, net kâr
