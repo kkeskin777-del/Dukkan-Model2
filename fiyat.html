@@ -238,6 +238,16 @@
 
   .hm-row{cursor:default;}
 
+  /* Sürükle bırak */
+  .drag-handle{cursor:grab;color:var(--muted);font-size:16px;padding:0 4px;user-select:none;flex-shrink:0;}
+  .drag-handle:active{cursor:grabbing;}
+  .hm-row.drag-over{border:2px dashed var(--a2);background:rgba(251,191,36,.05);}
+
+  /* Dış ürün listesi (Genel Giderler) */
+  .dis-urun-hdr{display:grid;grid-template-columns:2fr 120px 34px;gap:6px;margin-bottom:5px;}
+  .dis-urun-row{display:grid;grid-template-columns:2fr 120px 34px;gap:6px;margin-bottom:7px;align-items:center;}
+  .dis-urun-row input{margin-bottom:0;}
+
 
   /* FOTO DROP */
   #fotoDrop:hover{border-color:var(--a4);}
@@ -609,7 +619,7 @@
     </div>
 
     <div class="slbl"><div class="ico ib" style="width:24px;height:24px;font-size:12px;">🛍️</div>Dışarıdan Satın Alınan Ürünler</div>
-    <div class="ibar">Masa ayağı, vida, menteşe, tutamaç, boya gibi hazır satın aldığınız ürünler.</div>
+    <div class="ibar">Masa ayağı, vida, menteşe, tutamaç, boya gibi hazır satın aldığınız ürünler. <span style="color:var(--a2);">Genel Giderler sekmesindeki listeden hızla seçebilirsiniz.</span></div>
     <div class="gr-hdr"><label>Ürün Adı</label><label>Maliyet (₺)</label><span></span></div>
     <div id="disList"></div>
     <button class="btn badd" onclick="addDis()">➕ Ürün Ekle</button>
@@ -733,6 +743,15 @@
     <div id="sabitList"></div>
     <button class="btn badd" onclick="addSabit()">➕ Gider Ekle</button>
     <div class="ssum"><span class="sl">Toplam Aylık Sabit Gider</span><span class="sv" id="sabitToplam">₺ 0,00</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle"><div class="ico ib">🛍️</div>Dışarıdan Satın Alınan Ürünler</div>
+    <div class="ibar">Masa ayağı, vida, menteşe, boya gibi sürekli kullandığınız hazır ürünleri buraya ekleyin. Fiyat hesaplarken bu listedeki ürünleri seçebilirsiniz.</div>
+    <div class="dis-urun-hdr"><label>Ürün Adı</label><label>Birim Fiyatı (₺)</label><span></span></div>
+    <div id="disUrunListesiEl"></div>
+    <button class="btn badd" onclick="addDisUrun()">➕ Ürün Ekle</button>
+    <div class="ssum" style="margin-top:12px;"><span class="sl">Kayıtlı ürün sayısı</span><span class="sv" id="disUrunCount" style="color:var(--a4);">0 adet</span></div>
   </div>
   <div class="card">
     <div class="ctitle"><div class="ico iy">🧮</div>Ürün Başına Gider Payı</div>
@@ -1048,6 +1067,7 @@ async function syncYukle() {
     if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
     if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
     if(all['fhp_siparis'] != null){ siparisler=all['fhp_siparis']; localStorage.setItem('fhp_siparis',JSON.stringify(siparisler)); }
+    if(all['fhp_dis_urunler'] != null){ disUrunListesi=all['fhp_dis_urunler']; localStorage.setItem('fhp_dis_urunler',JSON.stringify(disUrunListesi)); }
     if(all['fhp_reklam']       != null) { reklamVeriler = all['fhp_reklam']; localStorage.setItem('fhp_reklam', JSON.stringify(reklamVeriler)); }
     if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
     if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
@@ -1056,7 +1076,7 @@ async function syncYukle() {
       const el = document.getElementById('etsy_kur');
       if(el) el.value = all['fhp_etsy_kur'];
     }
-    renderSabit(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
+    renderSabit(); renderDisUrunListesi(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
     if(document.getElementById('tab-reklam')?.classList.contains('active')) renderReklam();
     syncDurum('ok', '☁️ Bağlı');
   } catch(e) {
@@ -1206,7 +1226,7 @@ function sw(tab, btn){
     renderSaved();
     if(checkPendingUpdates()) showUpdateBanner();
   }
-  if(tab==='sabit')     { renderSabit(); calcSabitPay(); verimYukle(); }
+  if(tab==='sabit')     { renderSabit(); calcSabitPay(); verimYukle(); renderDisUrunListesi(); }
   if(tab==='hammadde')  renderHammadde();
   if(tab==='siparis')   renderSiparisler();
   if(tab==='reklam')    renderReklam();
@@ -1349,8 +1369,12 @@ function addHammadde(ad='', en='', boy='', fiyat=''){
   const id = 'hm_'+cnt.hm;
   const div = document.createElement('div');
   div.className = 'hm-row'; div.id = id;
+  div.setAttribute('draggable','true');
   div.innerHTML = `
-    <input type="text" placeholder="Örn: Meşe 1.8cm, Kayın 2cm..." value="${ad}" oninput="saveHammadde()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span class="drag-handle" title="Sürükleyerek sırala">⠿</span>
+      <input type="text" placeholder="Örn: Meşe 1.8cm, Kayın 2cm..." value="${ad}" oninput="saveHammadde()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="flex:1;">
+    </div>
     <input type="number" placeholder="121" min="0" step="0.1" value="${en}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="350" min="0" step="0.1" value="${boy}" oninput="updateHmRow('${id}')">
     <input type="number" placeholder="5000" min="0" step="1" value="${fiyat}" oninput="updateHmRow('${id}')">
@@ -1360,11 +1384,18 @@ function addHammadde(ad='', en='', boy='', fiyat=''){
   document.getElementById('hmList').appendChild(div);
   if(en && boy && fiyat) updateHmRow(id);
   renderHmCount();
+  // Drag events
+  div.addEventListener('dragstart', hmDragStart);
+  div.addEventListener('dragover',  hmDragOver);
+  div.addEventListener('dragleave', hmDragLeave);
+  div.addEventListener('drop',      hmDrop);
+  div.addEventListener('dragend',   hmDragEnd);
 }
 
 function updateHmRow(id){
   const row = document.getElementById(id); if(!row) return;
   const inp = row.querySelectorAll('input');
+  // inp[0]=ad, inp[1]=en, inp[2]=boy, inp[3]=fiyat
   const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
   const fiy=parseFloat(inp[3].value)||0;
   const badge = document.getElementById('badge_'+id);
@@ -1385,6 +1416,7 @@ function saveHammadde(){
   hammaddeler = [];
   document.querySelectorAll('#hmList .hm-row').forEach(row=>{
     const inp = row.querySelectorAll('input');
+    // inp[0]=ad (inside flex div), inp[1]=en, inp[2]=boy, inp[3]=fiyat
     const en=parseFloat(inp[1].value)||0, boy=parseFloat(inp[2].value)||0;
     const fiy=parseTutar(inp[3].value);
     const cm3f = (en>0&&boy>0&&fiy>0) ? fiy/(en*boy) : 0;
@@ -1645,19 +1677,44 @@ function calcAhsap(){
 }
 
 // ════════════ DIŞARIDAN ════════════
+function buildDisOptions(){
+  let html = '<option value="">— Listeden seç veya manuel gir —</option>';
+  disUrunListesi.forEach((d,i)=>{
+    if(d.ad) html += `<option value="${i}">${escH(d.ad)} — ${fmt(d.fiyat)} ₺</option>`;
+  });
+  return html;
+}
 function addDis(){
   cnt.dis++;
   const id='dis_'+cnt.dis;
   const div=document.createElement('div'); div.className='gr'; div.id=id;
   div.innerHTML=`
-    <input type="text" placeholder="Masa ayağı, vida, boya...">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      ${disUrunListesi.length>0?`<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`:''}
+      <input type="text" placeholder="Masa ayağı, vida, boya...">
+    </div>
     <input type="number" placeholder="0.00" min="0" step="0.01">
     <button class="bico" onclick="removeRow('${id}')">×</button>`;
   document.getElementById('disList').appendChild(div);
 }
+function disUrunSecildi(id){
+  const row = document.getElementById(id); if(!row) return;
+  const sel = row.querySelector('select');
+  if(!sel || sel.value==='') return;
+  const d = disUrunListesi[parseInt(sel.value)];
+  if(!d) return;
+  const inp = row.querySelectorAll('input');
+  if(inp[0]) inp[0].value = d.ad;
+  if(inp[1]) inp[1].value = d.fiyat;
+}
 function getDisToplam(){
   let t=0;
-  document.querySelectorAll('#disList .gr').forEach(r=>{t+=parseFloat(r.querySelectorAll('input')[1].value)||0;});
+  document.querySelectorAll('#disList .gr').forEach(r=>{
+    const inputs = r.querySelectorAll('input');
+    // fiyat her zaman son input'ta
+    const fiyatInp = inputs[inputs.length-1];
+    t+=parseFloat(fiyatInp?.value)||0;
+  });
   return t;
 }
 
@@ -1723,6 +1780,67 @@ function sabitOto(){
 
 
 
+
+// ════════════ HAMMADDE SÜRÜKLE BIRAK ════════════
+let _hmDragSrc = null;
+
+function hmDragStart(e){
+  _hmDragSrc = this;
+  this.style.opacity='0.5';
+  e.dataTransfer.effectAllowed='move';
+}
+function hmDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  // Sadece hm-row'lar üzerinde drag-over stilini göster
+  document.querySelectorAll('#hmList .hm-row').forEach(r=>r.classList.remove('drag-over'));
+  const row = e.currentTarget.closest('.hm-row');
+  if(row && row !== _hmDragSrc) row.classList.add('drag-over');
+  return false;
+}
+function hmDragLeave(e){
+  const row = e.currentTarget.closest?.('.hm-row');
+  if(row) row.classList.remove('drag-over');
+}
+function hmDrop(e){
+  e.stopPropagation();
+  const target = e.currentTarget.closest('.hm-row');
+  if(!target || !_hmDragSrc || target === _hmDragSrc) return false;
+  const list = document.getElementById('hmList');
+  const rows = [...list.querySelectorAll('.hm-row')];
+  const srcIdx = rows.indexOf(_hmDragSrc);
+  const tgtIdx = rows.indexOf(target);
+  if(srcIdx < tgtIdx){
+    list.insertBefore(_hmDragSrc, target.nextSibling);
+  } else {
+    list.insertBefore(_hmDragSrc, target);
+  }
+  target.classList.remove('drag-over');
+  saveHammadde();
+  refreshAhsapSelectors();
+  return false;
+}
+function hmDragEnd(){
+  this.style.opacity='1';
+  document.querySelectorAll('#hmList .hm-row').forEach(r=>r.classList.remove('drag-over'));
+  _hmDragSrc = null;
+}
+
+// ════════════ SİPARİŞ KAPORA ════════════
+function spKaporaHesapla(){
+  const fiyat  = parseTutar(document.getElementById('spFiyat')?.value)||0;
+  const kapora = parseTutar(document.getElementById('spKapora')?.value)||0;
+  const adet   = parseInt(document.getElementById('spAdet')?.value)||1;
+  const el = document.getElementById('spKalanGoster');
+  if(!el) return;
+  if(fiyat>0 && kapora>0){
+    const kalan = Math.max(0, fiyat*adet - kapora);
+    el.textContent = fmt(kalan)+' ₺';
+    el.style.color = kalan>0 ? 'var(--a3)' : '#6bcb77';
+  } else {
+    el.textContent = '—';
+  }
+}
 
 function showToast(msg){
   let t = document.getElementById('toast');
@@ -1828,6 +1946,9 @@ function karsılastir(){
     });
     return {hm, ahsapMal, hamMal, platSon};
   });
+
+  // Ucuzdan pahalıya sırala
+  sonuclar.sort((a,b)=>a.hamMal-b.hamMal);
 
   // En ucuz hammadde hangisi
   const minMal = Math.min(...sonuclar.map(s=>s.hamMal));
@@ -2187,7 +2308,10 @@ function snapshotForm(){
   const disler = [];
   document.querySelectorAll('#disList .gr').forEach(row=>{
     const inp = row.querySelectorAll('input');
-    disler.push({ad: inp[0]?.value||'', fiyat: parseTutar(inp[1]?.value)});
+    // Yeni yapıda select + text input + number input var
+    const adInp = inp[0];
+    const fiyatInp = inp[inp.length-1];
+    disler.push({ad: adInp?.value||'', fiyat: parseTutar(fiyatInp?.value)});
   });
   // Platformlar
   const platlar = [];
@@ -3187,8 +3311,64 @@ function verimYukle(){
 }
 
 
+// ════════════ DIŞARIDAN SATIN ALINAN ÜRÜNLER (Genel Giderler) ════════════
+let _disUrunCnt = 0;
+
+function addDisUrun(ad='', fiyat=''){
+  _disUrunCnt++;
+  const id = 'disu_'+_disUrunCnt;
+  const div = document.createElement('div');
+  div.className = 'dis-urun-row'; div.id = id;
+  div.innerHTML = `
+    <input type="text" placeholder="Örn: Masa ayağı, vida, boya..." value="${ad}" oninput="saveDisUrunler()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="number" placeholder="0.00" min="0" step="0.01" value="${fiyat}" oninput="saveDisUrunler()">
+    <button class="bico" onclick="removeRow('${id}');saveDisUrunler()">×</button>
+  `;
+  const el = document.getElementById('disUrunListesiEl');
+  if(el) el.appendChild(div);
+  saveDisUrunler();
+}
+
+function saveDisUrunler(){
+  disUrunListesi = [];
+  document.querySelectorAll('#disUrunListesiEl .dis-urun-row').forEach(row=>{
+    const inp = row.querySelectorAll('input');
+    const ad = inp[0]?.value.trim()||'';
+    const fiyat = parseFloat(inp[1]?.value)||0;
+    if(ad) disUrunListesi.push({ad, fiyat});
+  });
+  const cnt = document.getElementById('disUrunCount');
+  if(cnt) cnt.textContent = disUrunListesi.length + ' adet';
+  syncYaz('fhp_dis_urunler', disUrunListesi);
+  refreshDisSelectors();
+}
+
+function renderDisUrunListesi(){
+  const el = document.getElementById('disUrunListesiEl');
+  if(!el) return;
+  el.innerHTML = '';
+  _disUrunCnt = 0;
+  if(!disUrunListesi.length){ addDisUrun(); return; }
+  disUrunListesi.forEach(d => addDisUrun(d.ad, d.fiyat));
+  const cnt = document.getElementById('disUrunCount');
+  if(cnt) cnt.textContent = disUrunListesi.length + ' adet';
+}
+
+function refreshDisSelectors(){
+  // Hesapla sekmesindeki dis ürün satırlarındaki dropdown'ları güncelle
+  document.querySelectorAll('#disList .gr').forEach(row=>{
+    const sel = row.querySelector('select');
+    if(!sel) return;
+    const mevcut = sel.value;
+    sel.innerHTML = '<option value="">— Manuel gir —</option>'
+      + disUrunListesi.map((d,i)=>`<option value="${i}">${escH(d.ad)} — ${fmt(d.fiyat)} ₺</option>`).join('');
+    sel.value = mevcut;
+  });
+}
+
 // ════════════ SİPARİŞLER ════════════
 let siparisler = JSON.parse(localStorage.getItem('fhp_siparis') || '[]');
+let disUrunListesi = JSON.parse(localStorage.getItem('fhp_dis_urunler') || '[]');
 let aktifSiparisFiltre = '';
 const PLATFORMLAR_LIST = ['Trendyol','Hepsiburada','n11','Amazon TR','Etsy','Shopier','Instagram','Diğer'];
 const DURUM_LABEL = {uretim:'🔨 Üretimde', hazir:'📦 Hazır', gonderildi:'🚚 Gönderildi', tamamlandi:'✅ Tamamlandı'};
@@ -3232,7 +3412,15 @@ function siparisModalAc(mevcut=null){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
     +'<div class="fg"><label>Adet</label><input type="number" id="spAdet" value="'+(m?m.adet:1)+'" min="1"></div>'
     +'<div class="fg"><label>Satış Fiyatı (₺)</label>'
-    +'<input type="text" id="spFiyat" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this)" value="'+(m&&m.fiyat?fmt(m.fiyat):'')+'"></div>'
+    +'<input type="text" id="spFiyat" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this);spKaporaHesapla()" value="'+(m&&m.fiyat?fmt(m.fiyat):'')+'"></div>'
+    +'</div>'
+
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div class="fg"><label>💰 Kapora (₺)</label>'
+    +'<input type="text" id="spKapora" placeholder="0" inputmode="decimal" autocomplete="off" oninput="binAyiriciInput(this);spKaporaHesapla()" value="'+(m&&m.kapora?fmt(m.kapora):'')+'"></div>'
+    +'<div class="fg"><label>Kalan Ödeme</label>'
+    +'<div id="spKalanGoster" style="background:rgba(107,203,119,.08);border:1px solid rgba(107,203,119,.3);border-radius:8px;padding:9px 11px;font-family:\'Libre Baskerville\',serif;font-weight:700;font-size:15px;color:var(--a3);">—</div>'
+    +'</div>'
     +'</div>'
 
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
@@ -3356,6 +3544,7 @@ function siparisKaydet(guncelleId){
                    ||(urunIdxVal!==''&&savedProds[parseInt(urunIdxVal)]?savedProds[parseInt(urunIdxVal)].ad:'');
   const adet       = parseInt(document.getElementById('spAdet')?.value)||1;
   const fiyat      = parseTutar(document.getElementById('spFiyat')?.value);
+  const kapora     = parseTutar(document.getElementById('spKapora')?.value)||0;
   const tarih      = document.getElementById('spTarih')?.value||'';
   const teslim     = document.getElementById('spTeslim')?.value||'';
   const durum      = document.getElementById('spDurum')?.value||'uretim';
@@ -3396,11 +3585,11 @@ function siparisKaydet(guncelleId){
   if(guncelleId && guncelleId !== 'null'){
     const idx = siparisler.findIndex(x=>x.id===guncelleId);
     if(idx>=0){
-      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
+      siparisler[idx] = {...siparisler[idx], musteriAd, platform, urunAd, adet, fiyat, kapora, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
         urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null};
     }
   } else {
-    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
+    siparisler.unshift({id:Date.now(), musteriAd, platform, urunAd, adet, fiyat, kapora, kdvOrani, tarih, teslim, durum, not, kargoAdres, telefon, platDetay,
       urunIdx: urunIdxVal!==''?parseInt(urunIdxVal):null});
   }
 
@@ -3574,7 +3763,10 @@ function renderSiparisler(){
       +'<div class="sp-ust">'
       +'<div><div class="sp-ad">'+escH(s.urunAd)+(s.adet>1?' <span style="font-size:12px;color:var(--muted);">×'+s.adet+'</span>':'')+'</div>'
       +'<div class="sp-platform">'+escH(s.platform)+(s.musteriAd?' · '+escH(s.musteriAd):'')+(tarihStr?' · '+tarihStr:'')+'</div></div>'
+      +'<div style="text-align:right;">'
       +'<div class="sp-fiyat">'+(s.fiyat>0?fmt(s.fiyat*s.adet)+' ₺':'—')+'</div>'
+      +(s.kapora>0?'<div style="font-size:11px;color:var(--muted);">💰 Kapora: '+fmt(s.kapora)+' ₺ &nbsp;·&nbsp; <span style="color:var(--a3);font-weight:700;">Kalan: '+fmt(Math.max(0,s.fiyat*s.adet-s.kapora))+' ₺</span></div>':'')
+      +'</div>'
       +'</div>'
       +((teslimStr||s.not||kargoStr||telStr)?'<div class="sp-detay">'
         +(teslimStr?'<span>'+teslimStr+'</span>':'')
@@ -3616,6 +3808,10 @@ function siparisPopupAc(id){
     ['Adet', s.adet||1],
     ['Birim Fiyat', s.fiyat>0 ? fmt(s.fiyat)+' ₺' : '—'],
     ['Toplam', s.fiyat>0 ? fmt(s.fiyat*(s.adet||1))+' ₺' : '—'],
+    ...(s.kapora>0 ? [
+      ['💰 Kapora', fmt(s.kapora)+' ₺'],
+      ['✅ Kalan Ödeme', fmt(Math.max(0,s.fiyat*(s.adet||1)-s.kapora))+' ₺']
+    ] : []),
     ['Sipariş Tarihi', tarihStr],
     ['Teslim Tarihi', teslimStr],
     ['Not', s.not ? escH(s.not) : '—'],
