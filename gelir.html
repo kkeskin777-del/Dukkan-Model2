@@ -278,6 +278,27 @@ header{
   .summary-grid{grid-template-columns:1fr 1fr;}
   .bar-vals{display:none;}
 }
+/* ── SÜZGEÇ ŞERİDİ ── */
+.list-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.list-filter-bar .lf-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+.chip{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Nunito',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);transition:all .15s;white-space:nowrap;}
+.chip:hover{color:var(--text);}
+.chip.active-income{background:rgba(61,214,140,.12);color:var(--income);border-color:rgba(61,214,140,.3);}
+.chip.active-expense{background:rgba(255,107,107,.12);color:var(--expense);border-color:rgba(255,107,107,.3);}
+.chip.active-kat{background:rgba(199,125,255,.12);color:var(--purple);border-color:rgba(199,125,255,.3);}
+.chip.active-kdv{background:rgba(76,201,240,.12);color:var(--blue);border-color:rgba(76,201,240,.3);}
+.lf-sep{width:1px;height:20px;background:var(--border2);flex-shrink:0;}
+/* Kategori yönetim */
+.kat-yonetim{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:rgba(199,125,255,.04);border:1px solid rgba(199,125,255,.12);border-radius:10px;padding:10px 14px;margin-bottom:12px;}
+.kat-yonetim .ky-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
+.kat-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:14px;font-size:12px;font-weight:600;background:rgba(199,125,255,.1);color:var(--purple);border:1px solid rgba(199,125,255,.25);}
+.kat-chip .kat-del{background:none;border:none;color:rgba(199,125,255,.5);cursor:pointer;font-size:13px;line-height:1;padding:0;margin-left:2px;transition:color .15s;}
+.kat-chip .kat-del:hover{color:var(--expense);}
+.kat-add-row{display:flex;align-items:center;gap:6px;margin-top:8px;width:100%;}
+.kat-add-row input{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:7px 11px;font-family:'Nunito',sans-serif;font-size:12px;max-width:200px;}
+.kat-add-row input:focus{outline:none;border-color:var(--purple);}
+.kat-add-btn{background:rgba(199,125,255,.12);color:var(--purple);border:1px solid rgba(199,125,255,.25);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;font-family:'Nunito',sans-serif;cursor:pointer;}
+.kat-add-btn:hover{background:rgba(199,125,255,.22);}
 </style>
 </head>
 <body>
@@ -341,11 +362,17 @@ header{
         </select>
       </div>
       <div class="fg"><label>Tarih</label><input type="date" id="gelirTarih"></div>
-      <button class="btn btn-income" onclick="gelirEkle()">➕ Ekle</button>
+      <button class="btn btn-income" onclick="gelirEkle()">&#43; Ekle</button>
     </div>
   </div>
   <div class="card">
     <div class="ctitle"><div class="ico ig">📈</div>Gelir Kayıtları <span id="gelirCount" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:6px;"></span></div>
+    <div class="list-filter-bar">
+      <span class="lf-label">KDV</span>
+      <button class="chip active-income" id="gKdvHepsi"  onclick="gelirKdvSec('hepsi')">Hepsi</button>
+      <button class="chip"              id="gKdvKdvli"  onclick="gelirKdvSec('kdvli')">KDV'li</button>
+      <button class="chip"              id="gKdvKdvsiz" onclick="gelirKdvSec('kdvsiz')">KDV'siz</button>
+    </div>
     <div class="entries-header income-hdr"><span>Açıklama</span><span>Tarih</span><span>KDV Hariç</span><span>KDV</span><span>KDV Dahil</span><span></span></div>
     <div id="gelirList"></div>
   </div>
@@ -357,6 +384,9 @@ header{
     <div class="ctitle"><div class="ico ir">📉</div>Gider Ekle</div>
     <div class="form-row">
       <div class="fg"><label>Açıklama</label><input type="text" id="giderAd" placeholder="Malzeme, kargo, işçilik..."></div>
+      <div class="fg"><label>Kategori</label>
+        <select id="giderKategori"><option value="">— Kategori Seç —</option></select>
+      </div>
       <div class="fg"><label>Tutar (₺)</label><input type="number" id="giderTutar" placeholder="0.00" min="0" step="0.01"></div>
       <div class="fg"><label>KDV %</label>
         <select id="giderKdv">
@@ -368,11 +398,30 @@ header{
         </select>
       </div>
       <div class="fg"><label>Tarih</label><input type="date" id="giderTarih"></div>
-      <button class="btn btn-expense" onclick="giderEkle()">➕ Ekle</button>
+      <button class="btn btn-expense" onclick="giderEkle()">&#43; Ekle</button>
     </div>
   </div>
   <div class="card">
     <div class="ctitle"><div class="ico ir">📉</div>Gider Kayıtları <span id="giderCount" style="font-size:12px;color:var(--muted);font-weight:400;margin-left:6px;"></span></div>
+    <!-- Kategori yönetim -->
+    <div class="kat-yonetim" id="katYonetim">
+      <span class="ky-label">Kategoriler</span>
+      <div id="katChipList"></div>
+      <div class="kat-add-row">
+        <input type="text" id="katYeniInput" placeholder="Yeni kategori..." onkeydown="if(event.key==='Enter')katEkle()">
+        <button class="kat-add-btn" onclick="katEkle()">&#43; Ekle</button>
+      </div>
+    </div>
+    <!-- Filtre şeridi -->
+    <div class="list-filter-bar">
+      <span class="lf-label">Kategori</span>
+      <div id="gKatFiltreler" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <div class="lf-sep"></div>
+      <span class="lf-label">KDV</span>
+      <button class="chip active-expense" id="dKdvHepsi"  onclick="giderKdvSec('hepsi')">Hepsi</button>
+      <button class="chip"               id="dKdvKdvli"  onclick="giderKdvSec('kdvli')">KDV'li</button>
+      <button class="chip"               id="dKdvKdvsiz" onclick="giderKdvSec('kdvsiz')">KDV'siz</button>
+    </div>
     <div class="entries-header expense-hdr"><span>Açıklama</span><span>Tarih</span><span>KDV Hariç</span><span>KDV</span><span>KDV Dahil</span><span></span></div>
     <div id="giderList"></div>
   </div>
@@ -397,6 +446,10 @@ header{
       <div class="fg" style="margin-bottom:12px;">
         <label>Açıklama</label>
         <input type="text" id="editAd" placeholder="Açıklama...">
+      </div>
+      <div class="fg" style="margin-bottom:12px;" id="editKatRow" style="display:none;">
+        <label>Kategori</label>
+        <select id="editKategori"><option value="">— Kategori Seç —</option></select>
       </div>
       <div class="modal-grid">
         <div class="fg">
@@ -436,6 +489,15 @@ let gelirler = JSON.parse(localStorage.getItem('mt_gelir') || '[]');
 let giderler = JSON.parse(localStorage.getItem('mt_gider') || '[]');
 
 const AYLAR = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+// ── SÜZGEÇ DURUMLARI ──
+let gelirKdvFiltre  = 'hepsi';   // 'hepsi' | 'kdvli' | 'kdvsiz'
+let giderKdvFiltre  = 'hepsi';
+let giderKatFiltre  = '';         // '' = hepsi, yoksa kategori adı
+
+// ── KATEGORİLER ──
+const KAT_VARSAYILAN = ['Hammadde','Reklam','Epoksi','Yağ/Vernik'];
+let giderKategoriler = JSON.parse(localStorage.getItem('mt_gider_kategoriler') || 'null') || [...KAT_VARSAYILAN];
 
 // ════════════ GOOGLE SHEETS SYNC ════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbz4SeB9UESIWO3h-qazSNBqWmhMF6aAZNM_PQSXwPCbNnq4GP7HW0qcchBgBuB2hbIu/exec';
@@ -503,6 +565,93 @@ async function syncYukle() {
 
 function kaydetGelir(){ syncYaz('mt_gelir', gelirler); }
 function kaydetGider(){ syncYaz('mt_gider', giderler); }
+
+// ══════════════════════════════════════════
+// KATEGORİ YÖNETİMİ
+// ══════════════════════════════════════════
+function katKaydet(){ localStorage.setItem('mt_gider_kategoriler', JSON.stringify(giderKategoriler)); }
+
+function katEkle(){
+  const inp = document.getElementById('katYeniInput');
+  const ad = (inp.value||'').trim();
+  if(!ad){ toast('⚠️ Kategori adı girin.'); return; }
+  if(giderKategoriler.includes(ad)){ toast('⚠️ Bu kategori zaten var.'); return; }
+  giderKategoriler.push(ad);
+  katKaydet();
+  inp.value = '';
+  renderKatYonetim();
+  renderKatFiltreler();
+  giderKategoriSelectGuncelle();
+}
+
+function katSil(ad){
+  if(KAT_VARSAYILAN.includes(ad)){ toast('⚠️ Varsayılan kategoriler silinemez.'); return; }
+  if(!confirm(`"${ad}" kategorisini silmek istiyor musunuz?`)) return;
+  giderKategoriler = giderKategoriler.filter(k=>k!==ad);
+  if(giderKatFiltre === ad) giderKatFiltre = '';
+  katKaydet();
+  renderKatYonetim();
+  renderKatFiltreler();
+  giderKategoriSelectGuncelle();
+  renderGiderList();
+}
+
+function renderKatYonetim(){
+  const el = document.getElementById('katChipList');
+  if(!el) return;
+  el.innerHTML = giderKategoriler.map(k=>`
+    <span class="kat-chip">${escH(k)}
+      ${KAT_VARSAYILAN.includes(k)
+        ? ''
+        : `<button class="kat-del" onclick="katSil('${escH(k)}')" title="Sil">×</button>`}
+    </span>`).join('');
+}
+
+function renderKatFiltreler(){
+  const el = document.getElementById('gKatFiltreler');
+  if(!el) return;
+  const chipHepsi = `<button class="chip ${giderKatFiltre===''?'active-expense':''}" onclick="giderKatSec('')">Hepsi</button>`;
+  const katChips = giderKategoriler.map(k=>
+    `<button class="chip ${giderKatFiltre===k?'active-kat':''}" onclick="giderKatSec('${escH(k)}')">${escH(k)}</button>`
+  ).join('');
+  el.innerHTML = chipHepsi + katChips;
+}
+
+function giderKategoriSelectGuncelle(){
+  ['giderKategori','editKategori'].forEach(selId=>{
+    const sel = document.getElementById(selId);
+    if(!sel) return;
+    const mevcut = sel.value;
+    sel.innerHTML = '<option value="">— Kategori Seç —</option>'
+      + giderKategoriler.map(k=>`<option value="${escH(k)}">${escH(k)}</option>`).join('');
+    sel.value = mevcut;
+  });
+}
+
+// ── SÜZGEÇ BUTON AKSIYONLARI ──
+function gelirKdvSec(val){
+  gelirKdvFiltre = val;
+  ['Hepsi','Kdvli','Kdvsiz'].forEach(s=>{
+    const el = document.getElementById('gKdv'+s);
+    if(el) el.className = 'chip' + (val===s.toLowerCase()?' active-income':'');
+  });
+  renderGelirList();
+}
+
+function giderKdvSec(val){
+  giderKdvFiltre = val;
+  ['Hepsi','Kdvli','Kdvsiz'].forEach(s=>{
+    const el = document.getElementById('dKdv'+s);
+    if(el) el.className = 'chip' + (val===s.toLowerCase()?' active-expense':'');
+  });
+  renderGiderList();
+}
+
+function giderKatSec(val){
+  giderKatFiltre = val;
+  renderKatFiltreler();
+  renderGiderList();
+}
 
 // ── YARDIMCI ──
 function fmt(n){ return (Math.round(n*100)/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -607,7 +756,10 @@ function gelirSil(id){
 }
 
 function renderGelirList(){
-  const liste = filtrele(gelirler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
+  let liste = filtrele(gelirler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
+  // KDV süzgeci
+  if(gelirKdvFiltre==='kdvli')  liste = liste.filter(e=>e.kdvOrani>0);
+  if(gelirKdvFiltre==='kdvsiz') liste = liste.filter(e=>e.kdvOrani===0);
   const el = document.getElementById('gelirList');
   document.getElementById('gelirCount').textContent = liste.length ? `(${liste.length} kayıt)` : '';
   if(!liste.length){
@@ -638,14 +790,15 @@ function renderGelirList(){
 // GİDER
 // ══════════════════════════════════════════
 function giderEkle(){
-  const ad    = document.getElementById('giderAd').value.trim();
-  const tutar = parseFloat(document.getElementById('giderTutar').value)||0;
-  const kdv   = parseInt(document.getElementById('giderKdv').value)||0;
-  const tarih = document.getElementById('giderTarih').value || bugunTarih();
+  const ad       = document.getElementById('giderAd').value.trim();
+  const kategori = document.getElementById('giderKategori').value || '';
+  const tutar    = parseFloat(document.getElementById('giderTutar').value)||0;
+  const kdv      = parseInt(document.getElementById('giderKdv').value)||0;
+  const tarih    = document.getElementById('giderTarih').value || bugunTarih();
   if(!ad){ toast('⚠️ Açıklama girin.'); return; }
   if(tutar<=0){ toast('⚠️ Tutar girin.'); return; }
   const hesap = kdvHesapla(tutar, kdv);
-  giderler.push({ id: Date.now(), ad, tarih, kdvOrani:kdv, dahil:hesap.dahil, hariç:hesap.hariç, kdvT:hesap.kdvT });
+  giderler.push({ id: Date.now(), ad, kategori, tarih, kdvOrani:kdv, dahil:hesap.dahil, hariç:hesap.hariç, kdvT:hesap.kdvT });
   kaydetGider();
   yillariGuncelle();
   document.getElementById('giderAd').value='';
@@ -665,7 +818,12 @@ function giderSil(id){
 }
 
 function renderGiderList(){
-  const liste = filtrele(giderler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
+  let liste = filtrele(giderler).sort((a,b)=>b.tarih.localeCompare(a.tarih));
+  // Kategori süzgeci
+  if(giderKatFiltre) liste = liste.filter(e=>e.kategori===giderKatFiltre);
+  // KDV süzgeci
+  if(giderKdvFiltre==='kdvli')  liste = liste.filter(e=>e.kdvOrani>0);
+  if(giderKdvFiltre==='kdvsiz') liste = liste.filter(e=>e.kdvOrani===0);
   const el = document.getElementById('giderList');
   document.getElementById('giderCount').textContent = liste.length ? `(${liste.length} kayıt)` : '';
   if(!liste.length){
@@ -674,12 +832,15 @@ function renderGiderList(){
   }
   el.innerHTML = liste.map(e=>{
     const sadecKdv = e.kdvOrani === 100;
-    const badge = sadecKdv
+    const kdvBadge = sadecKdv
       ? `<span class="badge-kdv" style="background:rgba(192,57,43,.15);color:var(--kdv-red);border-color:rgba(192,57,43,.3);">🧾 Sadece KDV</span>`
       : (e.kdvOrani>0 ? `<span class="badge-kdv">%${e.kdvOrani} KDV</span>` : '');
+    const katBadge = e.kategori
+      ? `<span style="display:inline-block;background:rgba(199,125,255,.1);color:var(--purple);border:1px solid rgba(199,125,255,.25);border-radius:5px;font-size:10px;font-weight:700;padding:2px 7px;margin-left:4px;">${escH(e.kategori)}</span>`
+      : '';
     return `
     <div class="entry expense-row">
-      <div class="entry-name">${escH(e.ad)} ${badge}</div>
+      <div class="entry-name">${escH(e.ad)} ${kdvBadge}${katBadge}</div>
       <div class="entry-date">${tarihStr(e.tarih)}</div>
       <div class="entry-val ${sadecKdv?'muted':'red'}">${sadecKdv?'—':fmt(e.hariç)+' ₺'}</div>
       <div class="entry-val muted">${e.kdvT>0?fmt(e.kdvT)+' ₺':'—'}</div>
@@ -979,6 +1140,14 @@ function modalAc(tip, id){
   document.getElementById('editTutar').value = e.kdvOrani === 100 ? e.kdvT : e.dahil;
   document.getElementById('editKdv').value   = e.kdvOrani;
   document.getElementById('editTarih').value = e.tarih;
+  // Kategori alanını sadece gider için göster
+  const katRow = document.getElementById('editKatRow');
+  if(katRow) katRow.style.display = tip==='gider' ? 'flex' : 'none';
+  if(tip==='gider'){
+    giderKategoriSelectGuncelle();
+    const katSel = document.getElementById('editKategori');
+    if(katSel) katSel.value = e.kategori||'';
+  }
   document.getElementById('editModal').style.display = 'flex';
 }
 
@@ -992,17 +1161,20 @@ function modalDisTikla(e){
 }
 
 function editKaydet(){
-  const ad    = document.getElementById('editAd').value.trim();
-  const tutar = parseFloat(document.getElementById('editTutar').value)||0;
-  const kdv   = parseInt(document.getElementById('editKdv').value)||0;
-  const tarih = document.getElementById('editTarih').value;
+  const ad       = document.getElementById('editAd').value.trim();
+  const tutar    = parseFloat(document.getElementById('editTutar').value)||0;
+  const kdv      = parseInt(document.getElementById('editKdv').value)||0;
+  const tarih    = document.getElementById('editTarih').value;
+  const kategori = _editTip==='gider' ? (document.getElementById('editKategori')?.value||'') : undefined;
   if(!ad){ toast('⚠️ Açıklama girin.'); return; }
   if(tutar<=0){ toast('⚠️ Tutar girin.'); return; }
   const hesap = kdvHesapla(tutar, kdv);
   const liste = _editTip==='gelir' ? gelirler : giderler;
   const idx = liste.findIndex(x=>x.id===_editId);
   if(idx===-1){ toast('⚠️ Kayıt bulunamadı.'); return; }
-  liste[idx] = { ...liste[idx], ad, tarih, kdvOrani:kdv, dahil:hesap.dahil, hariç:hesap.hariç, kdvT:hesap.kdvT };
+  const yeni = { ...liste[idx], ad, tarih, kdvOrani:kdv, dahil:hesap.dahil, hariç:hesap.hariç, kdvT:hesap.kdvT };
+  if(kategori !== undefined) yeni.kategori = kategori;
+  liste[idx] = yeni;
   if(_editTip==='gelir'){ kaydetGelir(); renderGelirList(); }
   else                  { kaydetGider(); renderGiderList(); }
   yillariGuncelle();
@@ -1027,6 +1199,9 @@ function toast(msg){
 function init(){
   document.getElementById('gelirTarih').value = bugunTarih();
   document.getElementById('giderTarih').value = bugunTarih();
+  giderKategoriSelectGuncelle();
+  renderKatYonetim();
+  renderKatFiltreler();
   yillariGuncelle();
   renderOzet();
   setTimeout(syncYukle, 500);
