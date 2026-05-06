@@ -826,11 +826,55 @@ function renderGiderList(){
   if(giderKdvFiltre==='kdvsiz') liste = liste.filter(e=>e.kdvOrani===0);
   const el = document.getElementById('giderList');
   document.getElementById('giderCount').textContent = liste.length ? `(${liste.length} kayıt)` : '';
+
+  // Kategori seçiliyse özet bar göster
+  let ozetHtml = '';
+  if(giderKatFiltre){
+    const topDahil  = liste.reduce((s,e)=>s+e.dahil,  0);
+    const topHariç  = liste.reduce((s,e)=>s+e.hariç,  0);
+    const topKdv    = liste.reduce((s,e)=>s+e.kdvT,   0);
+    const f = getFilter();
+    let donem = 'Tüm zamanlar';
+    if(f.yil && f.ay) donem = `${AYLAR[f.ay]} ${f.yil}`;
+    else if(f.yil)    donem = `${f.yil} yılı`;
+    else if(f.ay)     donem = `${AYLAR[f.ay]} (tüm yıllar)`;
+    ozetHtml = `
+    <div style="
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+      background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);
+      border-radius:11px;padding:13px 16px;margin-bottom:14px;
+    ">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">
+          📂 ${escH(giderKatFiltre)} — ${escH(donem)}
+        </div>
+        <div style="font-size:22px;font-weight:800;color:var(--expense);font-family:'Nunito',sans-serif;">
+          ${fmt(topDahil)} ₺
+          <span style="font-size:13px;font-weight:500;color:var(--muted);margin-left:6px;">toplam gider</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">KDV Hariç</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);">${fmt(topHariç)} ₺</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Ödenen KDV</div>
+          <div style="font-size:15px;font-weight:700;color:var(--blue);">${fmt(topKdv)} ₺</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Kayıt</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);">${liste.length} adet</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   if(!liste.length){
-    el.innerHTML=`<div class="empty-state"><div class="es-icon">📉</div><p>Henüz gider kaydı yok.<br>Yukarıdan ekleyin.</p></div>`;
+    el.innerHTML = ozetHtml + `<div class="empty-state"><div class="es-icon">📉</div><p>Henüz gider kaydı yok.<br>Yukarıdan ekleyin.</p></div>`;
     return;
   }
-  el.innerHTML = liste.map(e=>{
+  el.innerHTML = ozetHtml + liste.map(e=>{
     const sadecKdv = e.kdvOrani === 100;
     const kdvBadge = sadecKdv
       ? `<span class="badge-kdv" style="background:rgba(192,57,43,.15);color:var(--kdv-red);border-color:rgba(192,57,43,.3);">🧾 Sadece KDV</span>`
