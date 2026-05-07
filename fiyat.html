@@ -998,6 +998,9 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbz4SeB9UESIWO3h-qazSNBq
 let _syncTimer = null;
 let _syncQueue = {};
 let _syncing   = false;
+// Yerel değişiklik takibi — GAS'a henüz onaylanmamış key'ler.
+// syncYukle bu key'leri bulut verisiyle ASLA ezmez.
+let _localDirty = new Set();
 
 function syncDurum(tip, mesaj) {
   const dot = document.getElementById('syncDot');
@@ -1009,17 +1012,24 @@ function syncDurum(tip, mesaj) {
 }
 
 function syncYaz(key, value) {
+  // 1. Önce localStorage'a yaz (anında, güvenli)
   localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+  // 2. Bu key'i dirty işaretle — buluttan gelen veri bunu ezemez
+  _localDirty.add(key);
+  // 3. GAS kuyruğuna ekle
   if(key === 'fhp_urunler' && Array.isArray(value)) {
     // Her ürünü ayrı key'e böl — foto ayrı saklanır
     const ids = value.map(u => u.id);
     _syncQueue['fhp_urunler_idx'] = ids;
+    _localDirty.add('fhp_urunler_idx');
     value.forEach(u => {
       if(u.foto && u.id) {
-        _syncQueue['fhp_foto_'+u.id] = u.foto; // foto ayrı key
+        _syncQueue['fhp_foto_'+u.id] = u.foto;
+        _localDirty.add('fhp_foto_'+u.id);
       }
       const {foto, ...rest} = u;
-      _syncQueue['fhp_u_'+u.id] = rest; // ürün fotosuz
+      _syncQueue['fhp_u_'+u.id] = rest;
+      _localDirty.add('fhp_u_'+u.id);
     });
   } else {
     _syncQueue[key] = value;
@@ -1036,7 +1046,6 @@ async function syncGonder() {
   _syncing = true;
   syncDurum('mesgul', 'Senkronize ediliyor...');
   try {
-    // Tüm key/value çiftlerini TEK istekte gönder
     const batch = Object.entries(kuyruk).map(([key, value]) => ({key, value}));
     await fetch(GAS_URL, {
       method: 'POST',
@@ -1044,9 +1053,12 @@ async function syncGonder() {
       headers: {'Content-Type':'text/plain'},
       body: JSON.stringify({batch})
     });
+    // Başarıyla gönderildi → dirty işaretlerini temizle
+    Object.keys(kuyruk).forEach(k => _localDirty.delete(k));
     syncDurum('ok', '☁️ Senkronize');
   } catch(e) {
     syncDurum('hata', '⚠️ Bağlantı hatası');
+    // Kuyruğu geri al; dirty'de kalır → syncYukle ezmeye çalışmaz
     Object.assign(_syncQueue, kuyruk);
   }
   _syncing = false;
@@ -1059,36 +1071,49 @@ async function syncYukle() {
     const d = await r.json();
     if(!d.ok || !d.value) { syncDurum('ok', '☁️ Bağlı'); return; }
     const all = d.value;
-    if(all['fhp_urunler_idx'] != null) {
-      // Ürünler ayrı key'lerde, fotoları da geri ekle
-      const ids = all['fhp_urunler_idx'];
-      savedProds = ids.map(id => {
-        const u = all['fhp_u_'+id];
-        if(!u) return null;
-        return {...u, foto: all['fhp_foto_'+id] || null};
-      }).filter(Boolean);
-      localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
-    } else if(all['fhp_urunler'] != null) {
-      // Eski format (geriye dönük uyumluluk)
-      savedProds = all['fhp_urunler'];
-      localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+
+    // Yardımcı: key dirty değilse ve bulut verisi boşsa yükleme yapma
+    function yukleEger(gasKey, lsKey, atama) {
+      if(_localDirty.has(gasKey) || _localDirty.has(lsKey)) return;
+      if(all[gasKey] == null) return;
+      atama(all[gasKey]);
+      localStorage.setItem(lsKey, JSON.stringify(all[gasKey]));
     }
-    if(all['fhp_sabit']        != null) { sabitList   = all['fhp_sabit'];    localStorage.setItem('fhp_sabit',    JSON.stringify(sabitList));   }
-    if(all['fhp_hammadde']     != null) { hammaddeler = all['fhp_hammadde']; localStorage.setItem('fhp_hammadde', JSON.stringify(hammaddeler)); }
-    if(all['fhp_plat']         != null) { platData    = all['fhp_plat'];     localStorage.setItem('fhp_plat',     JSON.stringify(platData));    }
-    if(all['fhp_kategoriler']  != null) { kategoriler = all['fhp_kategoriler']; localStorage.setItem('fhp_kategoriler', JSON.stringify(kategoriler)); }
-    if(all['fhp_plaka']        != null) { plakaStok   = all['fhp_plaka'];        localStorage.setItem('fhp_plaka',        JSON.stringify(plakaStok));        }
-    if(all['fhp_verim'] != null){ verimAyarlar=all['fhp_verim']; localStorage.setItem('fhp_verim',JSON.stringify(verimAyarlar)); }
-    if(all['fhp_siparis'] != null){ siparisler=all['fhp_siparis']; localStorage.setItem('fhp_siparis',JSON.stringify(siparisler)); }
-    if(all['fhp_dis_urunler'] != null){ disUrunListesi=all['fhp_dis_urunler']; localStorage.setItem('fhp_dis_urunler',JSON.stringify(disUrunListesi)); }
-    if(all['fhp_reklam']       != null) { reklamVeriler = all['fhp_reklam']; localStorage.setItem('fhp_reklam', JSON.stringify(reklamVeriler)); }
-    if(all['fhp_stok_analiz']  != null) { stokAnalizKayitlar = all['fhp_stok_analiz']; localStorage.setItem('fhp_stok_analiz', JSON.stringify(stokAnalizKayitlar)); }
-    if(all['fhp_opt_analiz']   != null) { optAnalizKayitlar  = all['fhp_opt_analiz'];  localStorage.setItem('fhp_opt_analiz',  JSON.stringify(optAnalizKayitlar));  }
-    if(all['fhp_etsy_kur'] != null) {
+
+    // Ürünler (özel format — dirty kontrolü ikisi için de)
+    if(!_localDirty.has('fhp_urunler') && !_localDirty.has('fhp_urunler_idx')) {
+      if(all['fhp_urunler_idx'] != null) {
+        const ids = all['fhp_urunler_idx'];
+        savedProds = ids.map(id => {
+          const u = all['fhp_u_'+id];
+          if(!u) return null;
+          return {...u, foto: all['fhp_foto_'+id] || null};
+        }).filter(Boolean);
+        localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+      } else if(all['fhp_urunler'] != null) {
+        savedProds = all['fhp_urunler'];
+        localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
+      }
+    }
+
+    yukleEger('fhp_sabit',       'fhp_sabit',       v => sabitList         = v);
+    yukleEger('fhp_hammadde',    'fhp_hammadde',    v => hammaddeler        = v);
+    yukleEger('fhp_plat',        'fhp_plat',        v => platData           = v);
+    yukleEger('fhp_kategoriler', 'fhp_kategoriler', v => kategoriler        = v);
+    yukleEger('fhp_plaka',       'fhp_plaka',       v => plakaStok          = v);
+    yukleEger('fhp_verim',       'fhp_verim',       v => verimAyarlar       = v);
+    yukleEger('fhp_siparis',     'fhp_siparis',     v => siparisler         = v);
+    yukleEger('fhp_dis_urunler', 'fhp_dis_urunler', v => disUrunListesi     = v);
+    yukleEger('fhp_reklam',      'fhp_reklam',      v => reklamVeriler      = v);
+    yukleEger('fhp_stok_analiz', 'fhp_stok_analiz', v => stokAnalizKayitlar = v);
+    yukleEger('fhp_opt_analiz',  'fhp_opt_analiz',  v => optAnalizKayitlar  = v);
+
+    if(!_localDirty.has('fhp_etsy_kur') && all['fhp_etsy_kur'] != null) {
       localStorage.setItem('fhp_etsy_kur', all['fhp_etsy_kur']);
       const el = document.getElementById('etsy_kur');
       if(el) el.value = all['fhp_etsy_kur'];
     }
+
     renderSabit(); renderDisUrunListesi(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
     if(document.getElementById('tab-reklam')?.classList.contains('active')) renderReklam();
     syncDurum('ok', '☁️ Bağlı');
