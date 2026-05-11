@@ -995,12 +995,17 @@ let cnt = {ah:0, dis:0, sabit:0, hm:0, plat:0};
 
 // ════════════ GOOGLE SHEETS SYNC ════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbz4SeB9UESIWO3h-qazSNBqWmhMF6aAZNM_PQSXwPCbNnq4GP7HW0qcchBgBuB2hbIu/exec';
-let _syncTimer = null;
-let _syncQueue = {};
-let _syncing   = false;
-// Yerel değişiklik takibi — GAS'a henüz onaylanmamış key'ler.
-// syncYukle bu key'leri bulut verisiyle ASLA ezmez.
-let _localDirty = new Set();
+let _syncTimer  = null;
+let _syncQueue  = {};
+let _syncing    = false;
+
+// Zaman damgaları: her key için en son yerel yazma zamanı.
+// localStorage'da kalıcı olarak tutulur.
+let _ts = JSON.parse(localStorage.getItem('_fhp_ts') || '{}');
+
+function _tsKaydet() {
+  localStorage.setItem('_fhp_ts', JSON.stringify(_ts));
+}
 
 function syncDurum(tip, mesaj) {
   const dot = document.getElementById('syncDot');
@@ -1012,27 +1017,25 @@ function syncDurum(tip, mesaj) {
 }
 
 function syncYaz(key, value) {
-  // 1. Önce localStorage'a yaz (anında, güvenli)
+  const now = Date.now();
+  // 1. localStorage'a yaz
   localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  // 2. Bu key'i dirty işaretle — buluttan gelen veri bunu ezemez
-  _localDirty.add(key);
-  // 3. GAS kuyruğuna ekle
+  // 2. Zaman damgasını güncelle
+  _ts[key] = now;
+  _tsKaydet();
+  // 3. GAS kuyruğuna ekle (veri + damga birlikte)
   if(key === 'fhp_urunler' && Array.isArray(value)) {
-    // Her ürünü ayrı key'e böl — foto ayrı saklanır
     const ids = value.map(u => u.id);
-    _syncQueue['fhp_urunler_idx'] = ids;
-    _localDirty.add('fhp_urunler_idx');
+    _syncQueue['fhp_urunler_idx'] = {v: ids,  ts: now};
     value.forEach(u => {
-      if(u.foto && u.id) {
-        _syncQueue['fhp_foto_'+u.id] = u.foto;
-        _localDirty.add('fhp_foto_'+u.id);
-      }
+      if(u.foto && u.id) _syncQueue['fhp_foto_'+u.id] = {v: u.foto, ts: now};
       const {foto, ...rest} = u;
-      _syncQueue['fhp_u_'+u.id] = rest;
-      _localDirty.add('fhp_u_'+u.id);
+      _syncQueue['fhp_u_'+u.id] = {v: rest, ts: now};
     });
+    _ts['fhp_urunler_idx'] = now;
+    _tsKaydet();
   } else {
-    _syncQueue[key] = value;
+    _syncQueue[key] = {v: value, ts: now};
   }
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(syncGonder, 1500);
@@ -1046,20 +1049,19 @@ async function syncGonder() {
   _syncing = true;
   syncDurum('mesgul', 'Senkronize ediliyor...');
   try {
-    const batch = Object.entries(kuyruk).map(([key, value]) => ({key, value}));
+    const batch = Object.entries(kuyruk).map(([key, wrap]) => ({key, value: wrap.v, ts: wrap.ts}));
     await fetch(GAS_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: {'Content-Type':'text/plain'},
       body: JSON.stringify({batch})
     });
-    // Başarıyla gönderildi → dirty işaretlerini temizle
-    Object.keys(kuyruk).forEach(k => _localDirty.delete(k));
+    // no-cors: başarı/hata bilinmiyor — kuyruğu boş bırak, damga sayesinde
+    // syncYukle çakışmayı zaten çözecek.
     syncDurum('ok', '☁️ Senkronize');
   } catch(e) {
     syncDurum('hata', '⚠️ Bağlantı hatası');
-    // Kuyruğu geri al; dirty'de kalır → syncYukle ezmeye çalışmaz
-    Object.assign(_syncQueue, kuyruk);
+    Object.assign(_syncQueue, kuyruk); // tekrar dene
   }
   _syncing = false;
 }
@@ -1072,22 +1074,47 @@ async function syncYukle() {
     if(!d.ok || !d.value) { syncDurum('ok', '☁️ Bağlı'); return; }
     const all = d.value;
 
-    // Yardımcı: key dirty değilse ve bulut verisi boşsa yükleme yapma
+    // GAS'taki zaman damgaları (GAS script ts alanını döndürmüyorsa 0 varsay)
+    const gasTsMap = all['_fhp_ts'] || {};
+
+    // Yardımcı: yerel damga vs GAS damgasını karşılaştır
+    // localTs >= gasTs → yerel veri daha yeni veya eşit → koru, GAS'a yeniden gönder
+    // gasTs > localTs  → GAS verisi daha yeni → güncelle
     function yukleEger(gasKey, lsKey, atama) {
-      if(_localDirty.has(gasKey) || _localDirty.has(lsKey)) return;
-      if(all[gasKey] == null) return;
-      atama(all[gasKey]);
-      localStorage.setItem(lsKey, JSON.stringify(all[gasKey]));
+      const gasVal = all[gasKey];
+      if(gasVal == null) return;
+      const localTs = _ts[lsKey] || _ts[gasKey] || 0;
+      const gasTs   = gasTsMap[gasKey] || (all[gasKey+'_ts']) || 0;
+      if(localTs > 0 && localTs >= gasTs) {
+        // Yerel daha yeni veya eşit → GAS geride kalmış olabilir, yeniden gönder
+        const localVal = localStorage.getItem(lsKey);
+        if(localVal != null) {
+          const parsed = JSON.parse(localVal);
+          _syncQueue[gasKey] = {v: parsed, ts: localTs};
+          clearTimeout(_syncTimer);
+          _syncTimer = setTimeout(syncGonder, 2000);
+        }
+        return; // lokali koru
+      }
+      // GAS daha yeni → güncelle
+      atama(gasVal);
+      localStorage.setItem(lsKey, JSON.stringify(gasVal));
+      _ts[lsKey] = gasTs || Date.now();
+      _tsKaydet();
     }
 
-    // Ürünler (özel format — dirty kontrolü ikisi için de)
-    if(!_localDirty.has('fhp_urunler') && !_localDirty.has('fhp_urunler_idx')) {
+    // Ürünler (özel format)
+    const localUrunTs = _ts['fhp_urunler'] || _ts['fhp_urunler_idx'] || 0;
+    const gasUrunTs   = gasTsMap['fhp_urunler_idx'] || gasTsMap['fhp_urunler'] || 0;
+    if(localUrunTs > 0 && localUrunTs >= gasUrunTs) {
+      // Yerel daha yeni — GAS'a yeniden gönder
+      const localVal = localStorage.getItem('fhp_urunler');
+      if(localVal) { _syncQueue['fhp_urunler_requeue'] = {v: JSON.parse(localVal), ts: localUrunTs}; }
+    } else {
       if(all['fhp_urunler_idx'] != null) {
-        const ids = all['fhp_urunler_idx'];
-        savedProds = ids.map(id => {
+        savedProds = all['fhp_urunler_idx'].map(id => {
           const u = all['fhp_u_'+id];
-          if(!u) return null;
-          return {...u, foto: all['fhp_foto_'+id] || null};
+          return u ? {...u, foto: all['fhp_foto_'+id] || null} : null;
         }).filter(Boolean);
         localStorage.setItem('fhp_urunler', JSON.stringify(savedProds));
       } else if(all['fhp_urunler'] != null) {
@@ -1108,10 +1135,14 @@ async function syncYukle() {
     yukleEger('fhp_stok_analiz', 'fhp_stok_analiz', v => stokAnalizKayitlar = v);
     yukleEger('fhp_opt_analiz',  'fhp_opt_analiz',  v => optAnalizKayitlar  = v);
 
-    if(!_localDirty.has('fhp_etsy_kur') && all['fhp_etsy_kur'] != null) {
-      localStorage.setItem('fhp_etsy_kur', all['fhp_etsy_kur']);
-      const el = document.getElementById('etsy_kur');
-      if(el) el.value = all['fhp_etsy_kur'];
+    if(all['fhp_etsy_kur'] != null) {
+      const localTs = _ts['fhp_etsy_kur'] || 0;
+      const gasTs   = gasTsMap['fhp_etsy_kur'] || 0;
+      if(gasTs > localTs) {
+        localStorage.setItem('fhp_etsy_kur', all['fhp_etsy_kur']);
+        const el = document.getElementById('etsy_kur');
+        if(el) el.value = all['fhp_etsy_kur'];
+      }
     }
 
     renderSabit(); renderDisUrunListesi(); renderHammadde(); renderPlatList(); renderSaved(); refreshAhsapSelectors(); renderKategoriFiltreBtn(); refreshKategoriSelect(); refreshOptHammadde();
