@@ -1502,14 +1502,18 @@ function checkPendingUpdates(){
   savedProds.forEach(u => {
     if(!u.snapshot || !u.snapshot.ahsaplar) return;
     u.snapshot.ahsaplar.forEach(a => {
-      if(a.hmIdx !== '' && a.hmIdx !== undefined){
+      // Hammadde seçilmişse (hmIdx dolu) kontrol et
+      if(a.hmIdx !== '' && a.hmIdx !== undefined && a.hmIdx !== null){
         const hm = hammaddeler[parseInt(a.hmIdx)];
         if(hm && hm.cm3f > 0){
           const guncelF = hm.cm3f.toFixed(6);
           const mevcutF = a.cm2f || a.cm3f || '';
+          // Mevcut fiyat hiç girilmemişse (manuel giriş) atla
+          if(mevcutF === '' || mevcutF === '0' || mevcutF === 0) return;
           if(String(mevcutF) !== guncelF) hasPending = true;
         }
       }
+      // hmIdx yok = manuel fiyat girişi → atla
     });
   });
   // Ürünlerim sekmesi butonuna güncelleme ikonu ekle/kaldır
@@ -1562,6 +1566,8 @@ function recalcSavedProds(){
         if(hm && hm.cm3f > 0){
           const yeniF = hm.cm3f.toFixed(6);
           const mevcutF = a.cm2f || a.cm3f || '';
+          // Manuel giriş (fiyat boş) ise güncelleme
+          if(mevcutF === '' || mevcutF === '0' || mevcutF === 0) return;
           if(String(mevcutF) !== yeniF){
             a.cm2f = yeniF;
             a.cm3f = yeniF;
