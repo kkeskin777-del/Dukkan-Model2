@@ -639,39 +639,18 @@
   </div>
 
   <div class="card">
-    <div class="ctitle"><div class="ico iy">💰</div>İşçilik & Diğer Maliyetler</div>
+    <div class="ctitle"><div class="ico iy">💰</div>Diğer Maliyetler</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <div class="fg">
-        <label>🔨 İşçilik / Emek (₺)</label>
-        <input type="number" id="iscilik" placeholder="0.00" min="0" step="0.01">
-      </div>
       <div class="fg">
         <label>⏱️ Üretim Süresi (saat) <span id="verimSaatHint" style="font-size:10px;color:var(--muted);font-weight:400;"></span></label>
         <input type="number" id="uretimSaat" placeholder="Örn: 2.5" min="0" step="0.25" oninput="verimHintGuncelle()">
       </div>
-      <div class="fg">
-        <label>🏪 Sabit Gider Payı (₺) <button class="bauto" onclick="sabitOto()">🔄 Otomatik Al</button></label>
-        <input type="number" id="sabitPay" placeholder="0.00" min="0" step="0.01">
-      </div>
-      <div class="fg">
-        <label>🔪 Plaka Dilimleme Payı</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
-          <div>
-            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Dilimleme Ücreti (₺)</div>
-            <input type="number" id="dilimUcret" placeholder="0.00" min="0" step="0.01" oninput="calcDilimPay()">
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Parça Adedi</div>
-            <input type="number" id="dilimAdet" placeholder="Örn: 8" min="1" step="1" oninput="calcDilimPay()">
-          </div>
-          <div style="text-align:center;padding-top:16px;">
-            <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">= Pay</div>
-            <div id="dilimPayGoster" style="font-family:'Libre Baskerville',serif;font-weight:800;font-size:15px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;">—</div>
-          </div>
-        </div>
-        <input type="hidden" id="dilimPay">
-      </div>
     </div>
+    <input type="hidden" id="iscilik" value="0">
+    <input type="hidden" id="sabitPay" value="0">
+    <input type="hidden" id="dilimPay" value="0">
+    <input type="hidden" id="dilimUcret" value="0">
+    <input type="hidden" id="dilimAdet" value="0">
   </div>
 
   <!-- PLATFORMLAR - manuel komisyon -->
@@ -766,13 +745,7 @@
     <button class="btn badd" onclick="addDisUrun()">➕ Ürün Ekle</button>
     <div class="ssum" style="margin-top:12px;"><span class="sl">Kayıtlı ürün sayısı</span><span class="sv" id="disUrunCount" style="color:var(--a4);">0 adet</span></div>
   </div>
-  <div class="card">
-    <div class="ctitle"><div class="ico iy">🧮</div>Ürün Başına Gider Payı</div>
-    <div class="g2">
-      <div class="fg"><label>Aylık Üretim Adedi</label><input type="number" id="aylikUretim" placeholder="Örn: 20" min="1" oninput="calcSabitPay()"></div>
-      <div><label>Her Ürüne Düşen</label><div class="wbar" style="margin-top:0;"><span class="wl">Ürün başına</span><span class="wv" id="urunBasina" style="color:var(--a4);">—</span></div></div>
-    </div>
-  </div>
+<input type="hidden" id="aylikUretim" value="1">
   <div class="card">
     <div class="ctitle"><div class="ico iy">⏱️</div>Aylık Kazanç Hedefi</div>
     <div class="ibar">Haftalık çalışma süreniz ve kazanç hedefinize göre saatlik kazanç hedefi hesaplanır. Ürün üretim süresini girince her platformda verimlilik analizi yapılır.</div>
@@ -1502,18 +1475,14 @@ function checkPendingUpdates(){
   savedProds.forEach(u => {
     if(!u.snapshot || !u.snapshot.ahsaplar) return;
     u.snapshot.ahsaplar.forEach(a => {
-      // Hammadde seçilmişse (hmIdx dolu) kontrol et
-      if(a.hmIdx !== '' && a.hmIdx !== undefined && a.hmIdx !== null){
+      if(a.hmIdx !== '' && a.hmIdx !== undefined){
         const hm = hammaddeler[parseInt(a.hmIdx)];
         if(hm && hm.cm3f > 0){
           const guncelF = hm.cm3f.toFixed(6);
           const mevcutF = a.cm2f || a.cm3f || '';
-          // Mevcut fiyat hiç girilmemişse (manuel giriş) atla
-          if(mevcutF === '' || mevcutF === '0' || mevcutF === 0) return;
           if(String(mevcutF) !== guncelF) hasPending = true;
         }
       }
-      // hmIdx yok = manuel fiyat girişi → atla
     });
   });
   // Ürünlerim sekmesi butonuna güncelleme ikonu ekle/kaldır
@@ -1566,8 +1535,6 @@ function recalcSavedProds(){
         if(hm && hm.cm3f > 0){
           const yeniF = hm.cm3f.toFixed(6);
           const mevcutF = a.cm2f || a.cm3f || '';
-          // Manuel giriş (fiyat boş) ise güncelleme
-          if(mevcutF === '' || mevcutF === '0' || mevcutF === 0) return;
           if(String(mevcutF) !== yeniF){
             a.cm2f = yeniF;
             a.cm3f = yeniF;
@@ -1780,11 +1747,12 @@ function addDis(){
   cnt.dis++;
   const id='dis_'+cnt.dis;
   const div=document.createElement('div'); div.className='dis-gr'; div.id=id;
+  // Listeden seç ya da direkt yaz — tek satırda
+  const selHtml = disUrunListesi.length>0
+    ? `<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`
+    : '';
   div.innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:4px;">
-      ${disUrunListesi.length>0?`<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`:''}
-      <input type="text" placeholder="Ürün adı...">
-    </div>
+    ${selHtml}
     <input type="number" placeholder="1" min="1" step="1" value="1" style="text-align:center;" oninput="disToplamGoster('${id}')">
     <input type="number" placeholder="0.00" min="0" step="0.01" oninput="disToplamGoster('${id}')">
     <button class="bico" onclick="removeRow('${id}')">×</button>`;
@@ -1797,9 +1765,8 @@ function disUrunSecildi(id){
   const d = disUrunListesi[parseInt(sel.value)];
   if(!d) return;
   const inp = row.querySelectorAll('input');
-  if(inp[0]) inp[0].value = d.ad;
-  // inp[1] = adet (değiştirme), inp[2] = birim fiyat
-  if(inp[2]) inp[2].value = d.fiyat;
+  // inp[0]=adet, inp[1]=birim fiyat (text input kaldırıldı)
+  if(inp[1]) inp[1].value = d.fiyat;
   disToplamGoster(id);
 }
 function disToplamGoster(id){
@@ -1809,9 +1776,9 @@ function getDisToplam(){
   let t=0;
   document.querySelectorAll('#disList .dis-gr').forEach(r=>{
     const inputs = r.querySelectorAll('input');
-    // inputs[0]=ad, inputs[1]=adet, inputs[2]=birim fiyat
-    const adet  = parseFloat(inputs[1]?.value)||1;
-    const fiyat = parseFloat(inputs[2]?.value)||0;
+    // inputs[0]=adet, inputs[1]=birim fiyat
+    const adet  = parseFloat(inputs[0]?.value)||1;
+    const fiyat = parseFloat(inputs[1]?.value)||0;
     t += adet * fiyat;
   });
   return t;
@@ -2409,11 +2376,13 @@ function snapshotForm(){
   // Dış ürünler
   const disler = [];
   document.querySelectorAll('#disList .dis-gr').forEach(row=>{
-    const inp = row.querySelectorAll('input');
-    // inp[0]=ad, inp[1]=adet, inp[2]=birim fiyat
-    const adet  = parseFloat(inp[1]?.value)||1;
-    const fiyat = parseTutar(inp[2]?.value);
-    if(inp[0]?.value||fiyat) disler.push({ad: inp[0]?.value||'', adet, fiyat, toplam: adet*fiyat});
+    const sel  = row.querySelector('select');
+    const inp  = row.querySelectorAll('input');
+    // Tek satır: inp[0]=adet, inp[1]=birim fiyat
+    const ad   = sel ? (sel.options[sel.selectedIndex]?.text||'').split(' — ')[0] : '';
+    const adet = parseFloat(inp[0]?.value)||1;
+    const fiyat= parseTutar(inp[1]?.value);
+    if(fiyat) disler.push({ad, adet, fiyat, toplam: adet*fiyat});
   });
   // Platformlar
   const platlar = [];
