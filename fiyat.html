@@ -170,14 +170,16 @@
   .bg{background:rgba(107,203,119,.15);color:var(--a3);}
 
   /* KAYITLI ÜRÜNLER */
-  .slist{display:flex;flex-direction:column;gap:10px;}
-  .si{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:15px;display:flex;align-items:flex-start;justify-content:space-between;transition:border-color .2s;flex-wrap:wrap;gap:9px;}
-  .si:hover{border-color:var(--a5);}
-  .sin{font-family:'Libre Baskerville',serif;font-weight:700;font-size:14px;margin-bottom:3px;}
-  .sim{font-size:12px;color:var(--muted);line-height:1.7;}
-  .sip{text-align:right;flex-shrink:0;}
-  .sip .sc{font-size:12px;color:var(--muted);margin-bottom:2px;}
-  .sip .ss{font-family:'Libre Baskerville',serif;font-weight:700;font-size:17px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .slist{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:1000px){.slist{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.slist{grid-template-columns:1fr;}}
+  .si{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s;cursor:pointer;}
+  .si:hover{border-color:var(--a5);box-shadow:0 4px 20px rgba(0,0,0,.2);}
+  .si-top{display:flex;align-items:flex-start;gap:10px;}
+  .sin{font-family:'Libre Baskerville',serif;font-weight:700;font-size:14px;margin-bottom:2px;line-height:1.3;}
+  .sim{font-size:11px;color:var(--muted);line-height:1.5;}
+  .ss{font-family:'Libre Baskerville',serif;font-weight:700;font-size:15px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;}
+  .si-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding-top:8px;border-top:1px solid var(--border);}
   .empty{text-align:center;padding:48px 20px;color:var(--muted);}
   .empty .eb{font-size:42px;margin-bottom:12px;}
 
@@ -639,18 +641,39 @@
   </div>
 
   <div class="card">
-    <div class="ctitle"><div class="ico iy">💰</div>Diğer Maliyetler</div>
+    <div class="ctitle"><div class="ico iy">💰</div>İşçilik & Diğer Maliyetler</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="fg">
+        <label>🔨 İşçilik / Emek (₺)</label>
+        <input type="number" id="iscilik" placeholder="0.00" min="0" step="0.01">
+      </div>
       <div class="fg">
         <label>⏱️ Üretim Süresi (saat) <span id="verimSaatHint" style="font-size:10px;color:var(--muted);font-weight:400;"></span></label>
         <input type="number" id="uretimSaat" placeholder="Örn: 2.5" min="0" step="0.25" oninput="verimHintGuncelle()">
       </div>
+      <div class="fg">
+        <label>🏪 Sabit Gider Payı (₺) <button class="bauto" onclick="sabitOto()">🔄 Otomatik Al</button></label>
+        <input type="number" id="sabitPay" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label>🔪 Plaka Dilimleme Payı</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Dilimleme Ücreti (₺)</div>
+            <input type="number" id="dilimUcret" placeholder="0.00" min="0" step="0.01" oninput="calcDilimPay()">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Parça Adedi</div>
+            <input type="number" id="dilimAdet" placeholder="Örn: 8" min="1" step="1" oninput="calcDilimPay()">
+          </div>
+          <div style="text-align:center;padding-top:16px;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">= Pay</div>
+            <div id="dilimPayGoster" style="font-family:'Libre Baskerville',serif;font-weight:800;font-size:15px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;">—</div>
+          </div>
+        </div>
+        <input type="hidden" id="dilimPay">
+      </div>
     </div>
-    <input type="hidden" id="iscilik" value="0">
-    <input type="hidden" id="sabitPay" value="0">
-    <input type="hidden" id="dilimPay" value="0">
-    <input type="hidden" id="dilimUcret" value="0">
-    <input type="hidden" id="dilimAdet" value="0">
   </div>
 
   <!-- PLATFORMLAR - manuel komisyon -->
@@ -664,6 +687,13 @@
       <label>🌿 Etsy – USD/TL Kuru</label>
       <input type="number" id="etsy_kur" placeholder="38.50" min="1" step="0.01" value="38.50" oninput="savePlatData()">
       <span id="etsy_kur_lbl" style="font-size:12px;color:var(--muted)">Anlık kur yükleniyor...</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;background:rgba(107,203,119,.06);border:1px solid rgba(107,203,119,.15);border-radius:8px;padding:10px 14px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--a3);font-weight:600;white-space:nowrap;">💚 Tüm Platformlara Net Kâr:</span>
+      <input type="number" id="tumNetKar" placeholder="500" min="0" step="1"
+        style="width:100px;background:var(--surface);border:1px solid rgba(107,203,119,.3);border-radius:6px;padding:6px 10px;color:var(--text);font-size:13px;font-weight:700;outline:none;"
+        oninput="tumNetKarUygula()">
+      <span style="font-size:11px;color:var(--muted);">₺ — girin, tüm platformlar güncellenir (sonra tek tek değiştirebilirsiniz)</span>
     </div>
     <div class="plat-hdr">
       <span></span>
@@ -745,7 +775,13 @@
     <button class="btn badd" onclick="addDisUrun()">➕ Ürün Ekle</button>
     <div class="ssum" style="margin-top:12px;"><span class="sl">Kayıtlı ürün sayısı</span><span class="sv" id="disUrunCount" style="color:var(--a4);">0 adet</span></div>
   </div>
-<input type="hidden" id="aylikUretim" value="1">
+  <div class="card">
+    <div class="ctitle"><div class="ico iy">🧮</div>Ürün Başına Gider Payı</div>
+    <div class="g2">
+      <div class="fg"><label>Aylık Üretim Adedi</label><input type="number" id="aylikUretim" placeholder="Örn: 20" min="1" oninput="calcSabitPay()"></div>
+      <div><label>Her Ürüne Düşen</label><div class="wbar" style="margin-top:0;"><span class="wl">Ürün başına</span><span class="wv" id="urunBasina" style="color:var(--a4);">—</span></div></div>
+    </div>
+  </div>
   <div class="card">
     <div class="ctitle"><div class="ico iy">⏱️</div>Aylık Kazanç Hedefi</div>
     <div class="ibar">Haftalık çalışma süreniz ve kazanç hedefinize göre saatlik kazanç hedefi hesaplanır. Ürün üretim süresini girince her platformda verimlilik analizi yapılır.</div>
@@ -1295,6 +1331,16 @@ function renderPlatList(){
   });
 }
 
+function tumNetKarUygula(){
+  const val = document.getElementById('tumNetKar').value;
+  if(!val) return;
+  document.querySelectorAll('#platList .plat-row').forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    if(inputs[4]) inputs[4].value = val;
+  });
+  savePlatData();
+}
+
 function addPlat(emoji='🛒', name='', komisyon='', kdv='20', kargo='0', netKarPlat='500', gumrukVergi='0', ekVergi='0', tasiyiciBedel='0'){
   cnt.plat++;
   const id = 'plat_'+cnt.plat;
@@ -1747,12 +1793,11 @@ function addDis(){
   cnt.dis++;
   const id='dis_'+cnt.dis;
   const div=document.createElement('div'); div.className='dis-gr'; div.id=id;
-  // Listeden seç ya da direkt yaz — tek satırda
-  const selHtml = disUrunListesi.length>0
-    ? `<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`
-    : '';
   div.innerHTML=`
-    ${selHtml}
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      ${disUrunListesi.length>0?`<select style="font-size:12px;" onchange="disUrunSecildi('${id}')">${buildDisOptions()}</select>`:''}
+      <input type="text" placeholder="Ürün adı...">
+    </div>
     <input type="number" placeholder="1" min="1" step="1" value="1" style="text-align:center;" oninput="disToplamGoster('${id}')">
     <input type="number" placeholder="0.00" min="0" step="0.01" oninput="disToplamGoster('${id}')">
     <button class="bico" onclick="removeRow('${id}')">×</button>`;
@@ -1765,8 +1810,9 @@ function disUrunSecildi(id){
   const d = disUrunListesi[parseInt(sel.value)];
   if(!d) return;
   const inp = row.querySelectorAll('input');
-  // inp[0]=adet, inp[1]=birim fiyat (text input kaldırıldı)
-  if(inp[1]) inp[1].value = d.fiyat;
+  if(inp[0]) inp[0].value = d.ad;
+  // inp[1] = adet (değiştirme), inp[2] = birim fiyat
+  if(inp[2]) inp[2].value = d.fiyat;
   disToplamGoster(id);
 }
 function disToplamGoster(id){
@@ -1776,9 +1822,9 @@ function getDisToplam(){
   let t=0;
   document.querySelectorAll('#disList .dis-gr').forEach(r=>{
     const inputs = r.querySelectorAll('input');
-    // inputs[0]=adet, inputs[1]=birim fiyat
-    const adet  = parseFloat(inputs[0]?.value)||1;
-    const fiyat = parseFloat(inputs[1]?.value)||0;
+    // inputs[0]=ad, inputs[1]=adet, inputs[2]=birim fiyat
+    const adet  = parseFloat(inputs[1]?.value)||1;
+    const fiyat = parseFloat(inputs[2]?.value)||0;
     t += adet * fiyat;
   });
   return t;
@@ -2376,13 +2422,11 @@ function snapshotForm(){
   // Dış ürünler
   const disler = [];
   document.querySelectorAll('#disList .dis-gr').forEach(row=>{
-    const sel  = row.querySelector('select');
-    const inp  = row.querySelectorAll('input');
-    // Tek satır: inp[0]=adet, inp[1]=birim fiyat
-    const ad   = sel ? (sel.options[sel.selectedIndex]?.text||'').split(' — ')[0] : '';
-    const adet = parseFloat(inp[0]?.value)||1;
-    const fiyat= parseTutar(inp[1]?.value);
-    if(fiyat) disler.push({ad, adet, fiyat, toplam: adet*fiyat});
+    const inp = row.querySelectorAll('input');
+    // inp[0]=ad, inp[1]=adet, inp[2]=birim fiyat
+    const adet  = parseFloat(inp[1]?.value)||1;
+    const fiyat = parseTutar(inp[2]?.value);
+    if(inp[0]?.value||fiyat) disler.push({ad: inp[0]?.value||'', adet, fiyat, toplam: adet*fiyat});
   });
   // Platformlar
   const platlar = [];
@@ -2664,30 +2708,30 @@ function renderSaved(){
     const el = document.createElement('div');
     el.className = 'si'; el.style.cursor='pointer';
     el.dataset.idx = idx;
+    const hmOzet = getHammaddeOzet(u);
+    const plOzet = getPlakaOzet(u);
     el.innerHTML = `
-      ${u.foto ? `<img class="si-foto" src="${u.foto}" alt="ürün">` : ''}
-      <div style="flex:1;min-width:0;">
-        ${u.kategori ? '<div class="si-kat">📂 '+escH(u.kategori)+'</div>' : ''}
-        <div class="sin" id="sinad_${idx}">${escH(u.ad)}</div>
-        <div class="sim">
-          ${(()=>{ const hm=getHammaddeOzet(u); return hm ? '<span style="color:var(--a5);font-weight:600;">🪵 '+escH(hm)+'</span><br>' : ''; })()}${(()=>{ const pl=getPlakaOzet(u); return pl ? '<span style="font-size:11px;color:var(--muted);">📐 '+pl+'</span><br>' : ''; })()}Maliyet: ${fmt(u.maliyet)} ₺<br>
-          <span class="sim-platlar">${u.platforms.map(p=>{
-            const isEtsy = p.name.toLowerCase().includes('etsy');
-            const kur = (u.snapshot && u.snapshot.etsy_kur) ? parseFloat(u.snapshot.etsy_kur) : (parseFloat(localStorage.getItem('fhp_etsy_kur'))||38.5);
-            const fiyatStr = isEtsy
-              ? '<strong>$'+( p.fiyat/kur).toFixed(2)+'</strong> <span style=\'font-size:11px;color:var(--muted)\'>(' +fmt(p.fiyat)+'₺)</span>'
-              : '<strong>'+fmt(p.fiyat)+' ₺</strong>';
-            return '<span class="sim-plat-item"><span class="sim-plat-ad">'+escH(p.name)+'</span><span class="sim-plat-fiy">'+fiyatStr+'</span></span>';
-          }).join('<span class="sim-sep"> | </span>')}</span><br>
-          <span style="font-size:11px;color:var(--muted)">${u.tarih}</span>
+      <div class="si-top">
+        ${u.foto ? `<img class="si-foto" src="${u.foto}" alt="ürün" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);">` : ''}
+        <div style="flex:1;min-width:0;">
+          ${u.kategori ? '<div class="si-kat">📂 '+escH(u.kategori)+'</div>' : ''}
+          <div class="sin" id="sinad_${idx}">${escH(u.ad)}</div>
+          <div class="sim">
+            ${hmOzet ? '🪵 '+escH(hmOzet)+(plOzet?'<br>':'') : ''}
+            ${plOzet ? '📐 '+plOzet : ''}
+          </div>
         </div>
       </div>
-      <div class="sip" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
-        <div class="ss">${mn===mx?fmt(mn):fmt(mn)+' – '+fmt(mx)} ₺</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn pdf-btn" data-pdf="${idx}" style="padding:5px 11px;font-size:12px;">⬇️ Çıktı</button>
-          <button class="btn" style="background:rgba(255,217,61,.1);color:var(--a2);border:1px solid rgba(255,217,61,.25);padding:5px 11px;font-size:12px;" data-edit="${idx}">✏️ Düzenle</button>
-          <button class="btn bdel" data-del="${idx}">🗑 Sil</button>
+      <div class="si-footer">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Maliyet: ${fmt(u.maliyet)} ₺</div>
+          <div class="ss">${mn===mx?fmt(mn):fmt(mx)} ₺</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">${u.tarih}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+          <button class="btn pdf-btn" data-pdf="${idx}" style="padding:4px 10px;font-size:11px;">⬇️ Çıktı</button>
+          <button class="btn" style="background:rgba(255,217,61,.1);color:var(--a2);border:1px solid rgba(255,217,61,.25);padding:4px 10px;font-size:11px;" data-edit="${idx}">✏️ Düzenle</button>
+          <button class="btn bdel" data-del="${idx}" style="padding:4px 10px;font-size:11px;">🗑 Sil</button>
         </div>
       </div>`;
     list.appendChild(el);
